@@ -1,0 +1,17 @@
+{
+  "name": "rohling-app",
+  "version": "0.1.0",
+  "description": "Rohling — lokaler News-Generator (Ghostwriter für Redaktionen)",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "@mozilla/readability": "^0.5.0",
+    "express": "^4",
+    "jsdom": "^24",
+    "mammoth": "^1.8.0",
+    "pdf-parse": "^1.1.1"
+  }
+}

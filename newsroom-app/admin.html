@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WE RIDE Newsroom — Admin / Kosten</title>
+<style>
+  :root{--bg:#fff;--ink:#14171c;--dim:#6b7280;--line:#e6e8ec;--surf:#f7f8fa;--accent:#ff2e7e;--purple:#7b5cff;--ok:#1f9d57;
+    --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);background:var(--surf);color:var(--ink);}
+  .wrap{max-width:1000px;margin:0 auto;padding:24px 20px 60px;}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  header svg{width:34px;height:34px;filter:drop-shadow(0 3px 8px rgba(255,46,126,.28));}
+  header h1{font-size:20px;font-weight:800;letter-spacing:-.01em;}
+  .sub{color:var(--dim);font-size:13px;margin-bottom:20px;}
+  .gate{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:22px;}
+  .gate input{flex:1;min-width:200px;border:1px solid var(--line);border-radius:9px;padding:11px 13px;font-size:14px;font-family:inherit;outline:none;}
+  .gate input:focus{border-color:var(--accent);}
+  .gate button{background:var(--ink);color:#fff;font-weight:700;font-size:13.5px;padding:11px 18px;border:none;border-radius:9px;cursor:pointer;}
+  .err{color:var(--accent);font-size:13px;margin-bottom:14px;display:none;}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+  @media(max-width:760px){.cards{grid-template-columns:repeat(2,1fr);}}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;}
+  .card .k{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--dim);}
+  .card .v{font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:6px;}
+  .card .s{font-size:12px;color:var(--dim);margin-top:3px;}
+  .card.hl{background:linear-gradient(160deg,#fff,#fff5f9);border-color:#ffd9e8;}
+  .card.hl .v{color:var(--accent);}
+  h2{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);margin:24px 0 10px;}
+  table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  th,td{text-align:left;padding:10px 14px;font-size:13.5px;border-bottom:1px solid var(--line);}
+  th{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:var(--dim);background:var(--surf);}
+  tr:last-child td{border-bottom:none;}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .bar{height:8px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--purple));}
+  .barwrap{background:var(--surf);border-radius:6px;overflow:hidden;}
+  .foot{margin-top:24px;color:var(--dim);font-size:12px;line-height:1.6;}
+  .reload{background:#fff;border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:13px;padding:9px 14px;border-radius:9px;cursor:pointer;}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;}
+  a.back{color:var(--accent);font-size:13px;text-decoration:none;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg viewBox="0 0 100 100"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FF5BA6"/><stop offset="1" stop-color="#E01E6A"/></linearGradient></defs>
+      <circle cx="50" cy="46" r="34" fill="url(#g)"/><path d="M27 66 L13 90 L45 77 Z" fill="url(#g)"/>
+      <path d="M50 27 C52.5 40.5 57 45 70 46 C57 47 52.5 51.5 50 65 C47.5 51.5 43 47 30 46 C43 45 47.5 40.5 50 27 Z" fill="#fff"/></svg>
+    <h1>Newsroom — Kosten & Nutzung</h1>
+  </header>
+  <div class="sub">Admin-Übersicht aller API-Calls: Tokens, Kosten, aufgeschlüsselt nach Typ, Modell, Tag und Redakteur. <a class="back" href="/">← zum Newsroom</a></div>
+
+  <div class="gate" id="gate">
+    <input id="tok" type="password" placeholder="Admin-Token eingeben">
+    <button onclick="saveTok()">Anzeigen</button>
+  </div>
+  <div class="err" id="err"></div>
+
+  <div id="dash" style="display:none">
+    <div class="row"><h2 style="margin:0">Überblick</h2><button class="reload" onclick="load()">↻ Aktualisieren</button></div>
+    <div class="cards" id="cards"></div>
+    <h2>Nach Typ</h2><div id="t-kind"></div>
+    <h2>Nach Modell</h2><div id="t-model"></div>
+    <h2>Nach Redakteur</h2><div id="t-editor"></div>
+    <h2>Pro Tag (letzte 14)</h2><div id="t-day"></div>
+    <div class="foot" id="foot"></div>
+  </div>
+</div>
+<script>
+let TOKEN = localStorage.getItem('nr-admin-token') || '';
+function saveTok(){ TOKEN=document.getElementById('tok').value.trim(); localStorage.setItem('nr-admin-token',TOKEN); load(); }
+function usd(n){ return '$'+(n||0).toFixed((n||0)<1?4:2); }
+function eur(n,rate){ return '≈ '+((n||0)*rate).toFixed((n||0)*rate<1?4:2)+' €'; }
+function tk(n){ return (n||0).toLocaleString('de-DE'); }
+function rows(obj, rate){
+  const ks=Object.keys(obj).sort((a,b)=>obj[b].cost-obj[a].cost);
+  if(!ks.length) return '<table><tr><td style="color:var(--dim)">Noch keine Daten.</td></tr></table>';
+  return `<table><tr><th>Name</th><th class="num">Calls</th><th class="num">Tokens (in/out)</th><th class="num">Kosten</th></tr>`+
+    ks.map(k=>`<tr><td>${k}</td><td class="num">${tk(obj[k].calls)}</td><td class="num">${tk(obj[k].input)} / ${tk(obj[k].output)}</td><td class="num">${usd(obj[k].cost)}</td></tr>`).join('')+`</table>`;
+}
+function dayList(byDay){
+  const ks=Object.keys(byDay).sort().slice(-14);
+  if(!ks.length) return '<table><tr><td style="color:var(--dim)">Noch keine Daten.</td></tr></table>';
+  const max=Math.max(...ks.map(k=>byDay[k].cost),0.0001);
+  return `<table><tr><th>Tag</th><th class="num">Calls</th><th style="width:40%">Kosten</th><th class="num">USD</th></tr>`+
+    ks.reverse().map(k=>`<tr><td>${k}</td><td class="num">${tk(byDay[k].calls)}</td><td><div class="barwrap"><div class="bar" style="width:${Math.max(3,byDay[k].cost/max*100)}%"></div></div></td><td class="num">${usd(byDay[k].cost)}</td></tr>`).join('')+`</table>`;
+}
+async function load(){
+  const err=document.getElementById('err'); err.style.display='none';
+  if(!TOKEN){ document.getElementById('tok').focus(); return; }
+  try{
+    const r=await fetch('/api/admin/usage?token='+encodeURIComponent(TOKEN));
+    if(r.status===403){ err.textContent='Token falsch oder ADMIN_TOKEN nicht gesetzt.'; err.style.display='block'; document.getElementById('dash').style.display='none'; return; }
+    const d=await r.json();
+    document.getElementById('gate').style.display='none';
+    document.getElementById('dash').style.display='block';
+    document.getElementById('cards').innerHTML=`
+      <div class="card hl"><div class="k">Gesamtkosten</div><div class="v">${usd(d.sum.cost)}</div><div class="s">${eur(d.sum.cost,d.rate)}</div></div>
+      <div class="card"><div class="k">API-Calls</div><div class="v">${tk(d.sum.calls)}</div><div class="s">insgesamt</div></div>
+      <div class="card"><div class="k">Tokens</div><div class="v">${tk(d.sum.input+d.sum.output)}</div><div class="s">${tk(d.sum.input)} in / ${tk(d.sum.output)} out</div></div>
+      <div class="card"><div class="k">Heute</div><div class="v">${usd(d.today.cost)}</div><div class="s">${tk(d.today.calls)} Calls</div></div>`;
+    document.getElementById('t-kind').innerHTML=rows(d.byKind,d.rate);
+    document.getElementById('t-model').innerHTML=rows(d.byModel,d.rate);
+    document.getElementById('t-editor').innerHTML=rows(d.byEditor,d.rate);
+    document.getElementById('t-day').innerHTML=dayList(d.byDay);
+    document.getElementById('foot').innerHTML=`Kurs für EUR-Schätzung: 1 USD ≈ ${d.rate} € (per <code>USD_EUR</code> anpassbar). Kosten sind aus Modell-Tokenpreisen berechnet, nicht die exakte Anbieter-Abrechnung.`;
+  }catch(e){ err.textContent='Konnte Daten nicht laden.'; err.style.display='block'; }
+}
+if(TOKEN){ document.getElementById('tok').value=TOKEN; load(); }
+</script>
+</body>
+</html>

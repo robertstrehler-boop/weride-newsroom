@@ -1,0 +1,18 @@
+# Secrets — niemals committen
+.env
+**/.env
+*.env
+
+# Abhängigkeiten
+node_modules/
+**/node_modules/
+
+# Laufzeit-Daten (liegen auf dem persistenten Volume, nicht im Repo)
+newsroom-app/data/
+**/data/sichtung.json
+**/data/drafts.json
+**/data/published.json
+
+# System
+.DS_Store
+*.log

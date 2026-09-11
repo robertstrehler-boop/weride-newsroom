@@ -1,0 +1,22 @@
+{
+  "name": "weride-newsroom-ingest",
+  "version": "0.1.0",
+  "description": "Liest das Gmail-Label 'Presse' aus (Google Alerts + Presse-Mails) und erzeugt die Sichtungs-Liste für den WE RIDE Newsroom.",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "ingest": "node ingest.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "@mozilla/readability": "^0.5.0",
+    "cheerio": "^1.0.0",
+    "express": "^4",
+    "imapflow": "^1.0.164",
+    "jsdom": "^24",
+    "mailparser": "^3.7.1"
+  }
+}

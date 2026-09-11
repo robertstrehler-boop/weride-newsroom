@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rohling — News-Generator</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1e222b;
+    --border: #2a2f3a;
+    --text: #e8eaed;
+    --muted: #9aa0ac;
+    --accent: #ff5a3c;
+    --accent-2: #ffb03c;
+    --green: #35c98a;
+    --blue: #4c8dff;
+    --radius: 14px;
+    --shadow: 0 10px 40px rgba(0,0,0,.35);
+    font-synthesis: none;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 600px at 80% -10%, #1c2130 0%, var(--bg) 55%);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hidden { display: none !important; }
+  button { font-family: inherit; cursor: pointer; border: none; }
+  .btn {
+    background: var(--accent); color: #fff; padding: 11px 18px;
+    border-radius: 10px; font-weight: 600; font-size: 14px;
+    transition: transform .06s ease, filter .15s ease;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn:active { transform: translateY(1px); }
+  .btn.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+  .btn.ghost { background: transparent; color: var(--muted); }
+  .btn.ghost:hover { color: var(--text); }
+  .btn.small { padding: 7px 12px; font-size: 13px; border-radius: 8px; }
+  .btn.green { background: var(--green); }
+  input, textarea, select {
+    font-family: inherit; background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 10px; padding: 12px 14px; font-size: 14px; width: 100%;
+    outline: none; transition: border-color .15s ease;
+  }
+  input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+  textarea { resize: vertical; line-height: 1.55; }
+  label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 7px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; }
+
+  /* LOGIN */
+  #login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  .login-card {
+    width: 100%; max-width: 380px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 34px 30px; box-shadow: var(--shadow);
+  }
+  .brand { display: flex; align-items: center; gap: 11px; margin-bottom: 26px; }
+  .brand .logo {
+    width: 40px; height: 40px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: grid; place-items: center; font-weight: 800; color: #fff; font-size: 20px;
+  }
+  .brand h1 { font-size: 19px; letter-spacing: -.3px; }
+  .brand span { color: var(--muted); font-size: 12px; display: block; font-weight: 500; }
+  .field { margin-bottom: 16px; }
+  .login-card .btn { width: 100%; margin-top: 6px; padding: 13px; }
+  .hint { text-align: center; color: var(--muted); font-size: 12px; margin-top: 16px; }
+
+  /* APP SHELL */
+  #app { min-height: 100vh; display: grid; grid-template-columns: 240px 1fr; }
+  aside {
+    background: var(--panel); border-right: 1px solid var(--border); padding: 22px 16px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  aside .brand { margin-bottom: 24px; padding: 0 6px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px; padding: 11px 12px; border-radius: 10px;
+    color: var(--muted); font-size: 14px; font-weight: 500; background: transparent; text-align: left; width: 100%;
+  }
+  .nav-item:hover { background: var(--panel-2); color: var(--text); }
+  .nav-item.active { background: var(--panel-2); color: var(--text); }
+  .nav-item .ic { width: 18px; text-align: center; }
+  .nav-spacer { flex: 1; }
+  .user-chip {
+    display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-top: 1px solid var(--border); margin-top: 8px;
+  }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg,var(--blue),#7b5cff); display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+  .user-chip .meta { font-size: 13px; } .user-chip .meta small { color: var(--muted); display: block; font-size: 11px; }
+
+  main { padding: 34px 40px; overflow-y: auto; max-height: 100vh; }
+  .page-head { margin-bottom: 26px; }
+  .page-head h2 { font-size: 24px; letter-spacing: -.5px; }
+  .page-head p { color: var(--muted); font-size: 14px; margin-top: 5px; }
+
+  /* DASHBOARD CARDS */
+  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 780px; }
+  .mode-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 26px; text-align: left; transition: border-color .15s ease, transform .1s ease;
+  }
+  .mode-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .mode-card .emoji { font-size: 30px; }
+  .mode-card h3 { font-size: 17px; margin: 14px 0 8px; }
+  .mode-card p { color: var(--muted); font-size: 13.5px; line-height: 1.55; }
+  .mode-card .go { color: var(--accent); font-size: 13px; font-weight: 600; margin-top: 16px; display: inline-block; }
+
+  .recent { margin-top: 40px; max-width: 780px; }
+  .recent h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 12px; }
+  .recent-item {
+    display: flex; align-items: center; gap: 14px; padding: 13px 16px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 10px; margin-bottom: 9px;
+  }
+  .recent-item .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .recent-item .t { flex: 1; font-size: 14px; }
+  .recent-item .t small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .badge { font-size: 11px; padding: 4px 9px; border-radius: 20px; font-weight: 600; }
+  .badge.draft { background: rgba(255,176,60,.15); color: var(--accent-2); }
+  .badge.review { background: rgba(76,141,255,.15); color: var(--blue); }
+  .badge.done { background: rgba(53,201,138,.15); color: var(--green); }
+
+  /* COMPOSER */
+  .composer { max-width: 720px; }
+  .composer .field { margin-bottom: 20px; }
+  .row { display: flex; gap: 14px; }
+  .row > div { flex: 1; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .chip { padding: 7px 13px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 20px; font-size: 13px; color: var(--muted); }
+  .chip.on { background: rgba(255,90,60,.15); border-color: var(--accent); color: var(--accent); }
+  .composer-actions { display: flex; gap: 12px; margin-top: 8px; align-items: center; }
+
+  /* CONTEXT */
+  .context-block { margin-bottom: 20px; }
+  .ctx-tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .ctx-tab {
+    display: flex; align-items: center; gap: 9px; padding: 9px 14px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 10px; font-size: 13.5px; color: var(--muted); font-weight: 600;
+  }
+  .ctx-tab.sel { border-color: var(--accent); color: var(--text); }
+  .ctx-tab.active-ctx { color: var(--text); }
+  .ctx-toggle { width: 30px; height: 17px; border-radius: 20px; background: var(--border); position: relative; transition: background .15s ease; flex-shrink: 0; }
+  .ctx-toggle::after { content:''; position:absolute; top:2px; left:2px; width:13px; height:13px; border-radius:50%; background:#fff; transition: transform .15s ease; }
+  .ctx-toggle.on { background: var(--green); }
+  .ctx-toggle.on::after { transform: translateX(13px); }
+  .client-dot { width: 22px; height: 22px; border-radius: 6px; background: linear-gradient(135deg,var(--blue),#7b5cff); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .ctx-tab.add { color: var(--muted); border-style: dashed; }
+  .ctx-tab.sel { background: rgba(255,90,60,.08); }
+  .ctx-editor { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .ctx-name { margin-bottom: 12px; font-weight: 600; }
+  .ctx-editor textarea { margin-bottom: 12px; }
+  .upload-zone {
+    border: 1.5px dashed var(--border); border-radius: 10px; padding: 16px; text-align: center;
+    color: var(--muted); font-size: 13.5px; font-weight: 600; transition: border-color .15s ease, color .15s ease;
+  }
+  .upload-zone:hover { border-color: var(--accent); color: var(--text); }
+  .upload-zone small { display: block; font-weight: 500; font-size: 11.5px; margin-top: 3px; opacity: .8; }
+  .file-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .file-chip { display: inline-flex; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 6px 11px; font-size: 12.5px; }
+  .file-chip b { cursor: pointer; color: var(--muted); font-weight: 700; }
+  .file-chip b:hover { color: var(--accent); }
+  .add-chip { cursor: pointer; color: var(--muted); border-style: dashed; }
+  .add-chip:hover { color: var(--text); border-color: var(--accent); }
+
+  /* PROMPT MODAL */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: grid; place-items: center; z-index: 60; padding: 24px; }
+  .modal { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 760px; max-height: 82vh; display: flex; flex-direction: column; box-shadow: var(--shadow); }
+  .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px; border-bottom: 1px solid var(--border); }
+  .modal-head h3 { font-size: 16px; }
+  .modal-head .x { background: transparent; color: var(--muted); font-size: 22px; line-height: 1; }
+  .modal-body { padding: 22px; overflow-y: auto; }
+  .modal-body pre { white-space: pre-wrap; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 12.5px; line-height: 1.6; color: #cdd2db; }
+  .modal-body .seg { margin-bottom: 20px; }
+  .modal-body .seg-label { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; padding: 3px 9px; border-radius: 6px; margin-bottom: 8px; }
+  .sl-system { background: rgba(255,90,60,.15); color: var(--accent); }
+  .sl-style { background: rgba(53,201,138,.15); color: var(--green); }
+  .sl-examples { background: rgba(76,141,255,.15); color: var(--blue); }
+  .sl-task { background: rgba(255,176,60,.15); color: var(--accent-2); }
+
+  /* LOADING */
+  .loading { max-width: 720px; }
+  .load-step { display: flex; align-items: center; gap: 13px; padding: 14px 16px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; opacity: .4; transition: opacity .3s ease; }
+  .load-step.active { opacity: 1; border-color: var(--accent); }
+  .load-step.done { opacity: 1; }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .check { color: var(--green); font-size: 18px; }
+
+  /* EDITOR */
+  .editor-layout { display: grid; grid-template-columns: 1fr 300px; gap: 26px; max-width: 1050px; }
+  .editor-main {}
+  .headline-variants { margin-bottom: 22px; }
+  .headline-variants label { margin-bottom: 10px; }
+  .hv { display: flex; align-items: center; gap: 12px; padding: 13px 15px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
+  .hv.sel { border-color: var(--accent); background: rgba(255,90,60,.06); }
+  .hv .radio { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0; }
+  .hv.sel .radio { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 3px var(--panel); }
+  .hv span { font-size: 15px; font-weight: 600; }
+  .article-body { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px 28px; }
+  .teaser { font-size: 15px; color: var(--accent-2); font-weight: 600; line-height: 1.5; margin-bottom: 18px; }
+  .article-body p { font-size: 15px; line-height: 1.72; margin-bottom: 15px; color: #d6d9df; }
+  .article-body [contenteditable]:focus { outline: 1px dashed var(--border); border-radius: 4px; }
+  .editor-side { }
+  .side-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .side-card h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 14px; }
+  .src { display: flex; gap: 10px; margin-bottom: 13px; font-size: 13px; }
+  .src .num { width: 20px; height: 20px; border-radius: 5px; background: var(--panel-2); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--accent); flex-shrink: 0; }
+  .src a { color: var(--blue); text-decoration: none; word-break: break-all; }
+  .src a:hover { text-decoration: underline; }
+  .fact { display: flex; gap: 9px; font-size: 13px; margin-bottom: 11px; color: var(--muted); line-height: 1.45; }
+  .fact .ic { color: var(--green); flex-shrink: 0; }
+  .meta-row { display: flex; justify-content: space-between; font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .meta-row:last-child { border: none; }
+  .meta-row span:first-child { color: var(--muted); }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 22px; flex-wrap: wrap; }
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--green); color: #04120c; padding: 13px 22px; border-radius: 10px; font-weight: 600; font-size: 14px; box-shadow: var(--shadow); transition: transform .3s ease; z-index: 50; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .demo-tag { position: fixed; top: 14px; right: 16px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); font-size: 11px; padding: 5px 11px; border-radius: 20px; z-index: 40; }
+  @media (max-width: 880px) {
+    #app { grid-template-columns: 1fr; }
+    aside { display: none; }
+    .mode-grid, .editor-layout { grid-template-columns: 1fr; }
+    main { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-tag">Prototyp · Demo-Daten</div>
+
+<!-- ============ LOGIN ============ -->
+<section id="login">
+  <div class="login-card">
+    <div class="brand">
+      <div class="logo">R</div>
+      <div><h1>Rohling</h1><span>News-Generator für Redaktionen</span></div>
+    </div>
+    <div class="field">
+      <label>E-Mail</label>
+      <input id="email" type="email" value="redaktion@newsportal.de">
+    </div>
+    <div class="field">
+      <label>Passwort</label>
+      <input id="pw" type="password" value="demo">
+    </div>
+    <button class="btn" onclick="login()">Anmelden</button>
+    <p class="hint">Demo — einfach auf „Anmelden" klicken</p>
+  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<section id="app" class="hidden">
+  <aside>
+    <div class="brand">
+      <div class="logo">R</div>
+      <div><h1 style="font-size:17px">Rohling</h1><span style="font-size:11px">Redaktion</span></div>
+    </div>
+    <button class="nav-item active" data-nav="dash" onclick="go('dash')"><span class="ic">▤</span> Dashboard</button>
+    <button class="nav-item" data-nav="new" onclick="startMode('sources')"><span class="ic">＋</span> Neuer Artikel</button>
+    <button class="nav-item" onclick="go('dash')"><span class="ic">◷</span> Verlauf</button>
+    <button class="nav-item" onclick="go('dash')"><span class="ic">⚙</span> Hausstil</button>
+    <div class="nav-spacer"></div>
+    <div class="user-chip">
+      <div class="avatar">RS</div>
+      <div class="meta">R. Strehler<small>Redakteur</small></div>
+    </div>
+  </aside>
+
+  <main>
+    <!-- DASHBOARD -->
+    <div id="view-dash">
+      <div class="page-head">
+        <h2>Guten Tag 👋</h2>
+        <p>Wie möchtest du heute starten?</p>
+      </div>
+      <div class="mode-grid">
+        <button class="mode-card" onclick="startMode('sources')">
+          <div class="emoji">🔗</div>
+          <h3>Aus Quellen</h3>
+          <p>Füge Links oder Artikel ein, die du recherchiert hast. Rohling macht daraus eine eigene, umgeschriebene Meldung — mit Quellenangaben.</p>
+          <span class="go">Quellen einfügen →</span>
+        </button>
+        <button class="mode-card" onclick="startMode('idea')">
+          <div class="emoji">💡</div>
+          <h3>Aus Idee / Schlagwort</h3>
+          <p>Gib ein Thema oder Stichwort ein. Rohling recherchiert selbstständig und schlägt dir einen fertigen Artikel vor.</p>
+          <span class="go">Thema eingeben →</span>
+        </button>
+      </div>
+
+      <div class="recent">
+        <h4>Zuletzt bearbeitet</h4>
+        <div class="recent-item">
+          <span class="dot" style="background:var(--green)"></span>
+          <div class="t">Stadtrat beschließt neuen Radweg am Hauptbahnhof<small>vor 12 Min · aus Quellen</small></div>
+          <span class="badge done">Freigegeben</span>
+        </div>
+        <div class="recent-item">
+          <span class="dot" style="background:var(--blue)"></span>
+          <div class="t">Lokale Bäckerei gewinnt Landespreis für Bio-Brot<small>vor 1 Std · aus Idee</small></div>
+          <span class="badge review">In Prüfung</span>
+        </div>
+        <div class="recent-item">
+          <span class="dot" style="background:var(--accent-2)"></span>
+          <div class="t">Wetterdienst warnt vor Unwetter am Wochenende<small>vor 3 Std · aus Quellen</small></div>
+          <span class="badge draft">Entwurf</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPOSER: SOURCES -->
+    <div id="view-sources" class="hidden">
+      <div class="page-head">
+        <h2>🔗 Neue Meldung aus Quellen</h2>
+        <p>Füge die Links und/oder Texte ein, aus denen die Meldung entstehen soll.</p>
+      </div>
+      <div class="composer">
+        <div class="field">
+          <label>Quellen-Links (einer pro Zeile)</label>
+          <textarea id="src-links" rows="3" placeholder="https://www.nachrichtenagentur.de/meldung-12345&#10;https://www.pressestelle-stadt.de/mitteilung">https://dpa.com/stadtrat-radweg-beschluss
+https://stadt-musterhausen.de/presse/radverkehr-2026</textarea>
+        </div>
+        <div class="field">
+          <label>Zusätzlicher Text / Notizen (optional)</label>
+          <textarea id="src-notes" rows="3" placeholder="Eigene Notizen, Zitate, Hintergrund…">Zitat Bürgermeisterin Klein: „Ein wichtiger Schritt für sichere Mobilität."</textarea>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Länge</label>
+            <select id="src-len"><option>Kurzmeldung (~150 W.)</option><option selected>Standard (~350 W.)</option><option>Ausführlich (~600 W.)</option></select>
+          </div>
+          <div class="field">
+            <label>Ressort</label>
+            <select id="src-ressort"><option selected>Lokales</option><option>Politik</option><option>Wirtschaft</option><option>Sport</option><option>Kultur</option></select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Tonalität</label>
+          <div class="chips" id="src-tone">
+            <span class="chip on" onclick="toggleChip(this)">Sachlich</span>
+            <span class="chip" onclick="toggleChip(this)">Nah dran</span>
+            <span class="chip" onclick="toggleChip(this)">Boulevard</span>
+            <span class="chip" onclick="toggleChip(this)">Analytisch</span>
+          </div>
+        </div>
+        <div class="context-block" id="ctx-sources"></div>
+        <div class="composer-actions">
+          <button class="btn" onclick="generate('sources')">✦ Meldung erstellen</button>
+          <button class="btn secondary" onclick="openPrompt('sources')">🔍 Prompt-Vorschau</button>
+          <button class="btn ghost" onclick="go('dash')">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPOSER: IDEA -->
+    <div id="view-idea" class="hidden">
+      <div class="page-head">
+        <h2>💡 Neuer Artikel aus Idee</h2>
+        <p>Gib ein Thema oder Schlagwort ein — Rohling recherchiert und schlägt einen Artikel vor.</p>
+      </div>
+      <div class="composer">
+        <div class="field">
+          <label>Thema / Schlagwort</label>
+          <input id="idea-topic" value="Fachkräftemangel Pflege in der Region">
+        </div>
+        <div class="field">
+          <label>Blickwinkel / Auftrag (optional)</label>
+          <textarea id="idea-angle" rows="2" placeholder="z. B. lokaler Bezug, konkrete Fragestellung…">Fokus auf lokale Kliniken und was Betroffene sagen.</textarea>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Länge</label>
+            <select id="idea-len"><option>Kurzmeldung (~150 W.)</option><option selected>Standard (~350 W.)</option><option>Ausführlich (~600 W.)</option></select>
+          </div>
+          <div class="field">
+            <label>Ressort</label>
+            <select id="idea-ressort"><option>Lokales</option><option selected>Gesundheit</option><option>Politik</option><option>Wirtschaft</option></select>
+          </div>
+        </div>
+        <div class="context-block" id="ctx-idea"></div>
+        <div class="composer-actions">
+          <button class="btn" onclick="generate('idea')">✦ Recherchieren & erstellen</button>
+          <button class="btn secondary" onclick="openPrompt('idea')">🔍 Prompt-Vorschau</button>
+          <button class="btn ghost" onclick="go('dash')">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div id="view-loading" class="hidden">
+      <div class="page-head"><h2 id="load-title">Rohling arbeitet…</h2><p>Das dauert im echten System ein paar Sekunden.</p></div>
+      <div class="loading" id="load-steps"></div>
+    </div>
+
+    <!-- EDITOR -->
+    <div id="view-editor" class="hidden">
+      <div class="page-head" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><h2>Entwurf</h2><p>Redigieren, Überschrift wählen, dann freigeben.</p></div>
+        <span class="badge draft" style="margin-top:6px">Entwurf</span>
+      </div>
+
+      <div class="toolbar">
+        <button class="btn small secondary" onclick="toast('Absatz neu formuliert')">↻ Absatz neu</button>
+        <button class="btn small secondary" onclick="toast('Kürzere Version erstellt')">✂ Kürzen</button>
+        <button class="btn small secondary" onclick="toast('SEO-Titel &amp; Meta erzeugt')">🔍 SEO</button>
+        <button class="btn small secondary" onclick="toast('Als Word exportiert')">⭳ Export</button>
+      </div>
+
+      <div class="editor-layout">
+        <div class="editor-main">
+          <div class="headline-variants">
+            <label>Überschrift wählen</label>
+            <div id="hv-list"></div>
+          </div>
+          <div class="article-body">
+            <p class="teaser" id="art-teaser" contenteditable="true"></p>
+            <div id="art-body"></div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:22px">
+            <button class="btn green" onclick="toast('Artikel freigegeben ✓')">✓ Freigeben</button>
+            <button class="btn secondary" onclick="toast('An Chefredaktion gesendet')">→ Zur Prüfung</button>
+            <button class="btn ghost" onclick="go('dash')">Verwerfen</button>
+          </div>
+        </div>
+
+        <div class="editor-side">
+          <div class="side-card">
+            <h4>Quellen</h4>
+            <div id="art-sources"></div>
+          </div>
+          <div class="side-card">
+            <h4>Faktencheck</h4>
+            <div id="art-facts"></div>
+          </div>
+          <div class="side-card">
+            <h4>Meta</h4>
+            <div class="meta-row"><span>Wörter</span><span id="m-words">348</span></div>
+            <div class="meta-row"><span>Lesezeit</span><span>1:45 Min</span></div>
+            <div class="meta-row"><span>Ressort</span><span id="m-ressort">Lokales</span></div>
+            <div class="meta-row"><span>Hausstil</span><span style="color:var(--green)">✓ geprüft</span></div>
+            <div class="meta-row"><span>Kunde</span><span id="m-ctx">–</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<div class="toast" id="toast">Gespeichert</div>
+
+<div id="prompt-overlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Das geht ans Modell — zusammengesetzter Prompt</h3>
+      <button class="x" onclick="closePrompt()">×</button>
+    </div>
+    <div class="modal-body" id="prompt-content"></div>
+  </div>
+</div>
+
+<script>
+  function login() { document.getElementById('login').classList.add('hidden'); document.getElementById('app').classList.remove('hidden'); renderContexts(); }
+
+  /* ---- Kundenprofile — aus deren Perspektive geschrieben wird ---- */
+  let clients = [
+    { id:1, name:'WE RIDE', context:'Unabhängiges Branchenmedium (Radverkehr). Neugierig statt belehrend, fragend statt urteilend, analytisch statt emotional. Kurze Sätze, klare Aussagen, keine Buzzwords. Aufbau: Beobachtung → Fakten → Hintergründe → Perspektivwechsel → die eigentliche Frage → offenes Fazit. Immer aus Sicht der GESAMTEN Branche.', files:['WE_RIDE_Style_Guide.pdf'], examples:['E-Bike-Boom: Warum die Zahlen 2025 kippen','Der Handel und die Direktvertriebs-Frage'] },
+    { id:2, name:'Stadtwerke Musterhausen', context:'Kommunaler Versorger. Sachlich, bürgernah, serviceorientiert. Themen: Energie, Wasser, Nahverkehr. Anrede „Sie". Nachhaltigkeit betonen.', files:['Styleguide_Stadtwerke.pdf'], examples:[] },
+    { id:3, name:'Klinikum Nord', context:'Gesundheitsversorger. Seriös, empathisch, fachlich präzise. Keine Heilversprechen, vorsichtig bei medizinischen Aussagen.', files:[], examples:[] }
+  ];
+  let activeClient = 1;
+  let clientSeq = 3;
+  const ctxContainers = ['ctx-sources','ctx-idea'];
+  function getClient() { return clients.find(c => c.id === activeClient); }
+  function renderContexts() {
+    ctxContainers.forEach(id => {
+      const el = document.getElementById(id); if (!el) return;
+      const tabs = clients.map(c => `
+        <div class="ctx-tab ${c.id===activeClient?'sel':''}" onclick="selectClient(${c.id})">
+          <div class="client-dot">${c.name.charAt(0)}</div>
+          ${c.name}${(c.context.trim()||c.files.length)?' •':''}
+        </div>`).join('') + `<div class="ctx-tab add" onclick="addClient()">＋ Kunde</div>`;
+      const c = getClient();
+      const chips = c.files.map((f,i) => `<span class="file-chip">📄 ${f} <b onclick="removeClientFile(${i})">×</b></span>`).join('');
+      const exChips = (c.examples||[]).map((e,i) => `<span class="file-chip" style="border-color:rgba(76,141,255,.4)">📝 ${e} <b onclick="removeExample(${i})">×</b></span>`).join('');
+      el.innerHTML = `
+        <label>Für welchen Kunden? — aus dessen Perspektive wird geschrieben</label>
+        <div class="ctx-tabs">${tabs}</div>
+        <div class="ctx-editor">
+          <input class="ctx-name" value="${c.name}" oninput="getClient().name=this.value" placeholder="Kundenname">
+          <textarea rows="3" placeholder="Perspektive, Tonalität, Themen, Do's & Don'ts dieses Kunden…" oninput="getClient().context=this.value">${c.context}</textarea>
+          <div class="upload-zone" onclick="uploadClientDoc()">⭱ Dokumente hochladen<small>Briefing · Styleguide · Pressemappe — PDF · Word · TXT</small></div>
+          <div class="file-list">${chips}</div>
+          <label style="margin-top:16px">Stilvorlagen — echte Beispielartikel (Few-Shot)</label>
+          <div class="file-list">${exChips}<span class="file-chip add-chip" onclick="addExample()">＋ Beispielartikel</span></div>
+        </div>`;
+    });
+  }
+  function selectClient(id) { activeClient = id; renderContexts(); }
+  function addClient() { clientSeq++; clients.push({ id:clientSeq, name:'Neuer Kunde', context:'', files:[] }); activeClient = clientSeq; renderContexts(); }
+  function removeClientFile(i) { getClient().files.splice(i,1); renderContexts(); }
+  function addExample() { const t = prompt('Titel des Beispielartikels (im echten System: voller Text):'); if (t) { const c = getClient(); (c.examples = c.examples||[]).push(t); renderContexts(); } }
+  function removeExample(i) { getClient().examples.splice(i,1); renderContexts(); }
+  function uploadClientDoc() {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.multiple = true;
+    inp.onchange = () => { for (const f of inp.files) getClient().files.push(f.name); renderContexts(); };
+    inp.click();
+  }
+  function go(view) {
+    ['dash','sources','idea','loading','editor'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
+    document.getElementById('view-'+view).classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (view==='dash') document.querySelector('[data-nav="dash"]').classList.add('active');
+    document.querySelector('main').scrollTop = 0;
+  }
+  function startMode(mode) { go(mode); }
+  function toggleChip(el) { el.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); }
+
+  const STEPS = {
+    sources: ['Quellen werden geladen…','Fakten & Zitate extrahiert','Dubletten & Widersprüche geprüft','Meldung im Hausstil geschrieben','Überschriften generiert'],
+    idea: ['Thema wird analysiert…','Web-Recherche läuft…','Quellen bewertet & gefiltert','Fakten zusammengeführt','Artikel im Hausstil geschrieben']
+  };
+
+  function generate(mode) {
+    go('loading');
+    document.getElementById('load-title').textContent = mode==='idea' ? 'Rohling recherchiert…' : 'Rohling schreibt…';
+    const box = document.getElementById('load-steps'); box.innerHTML='';
+    const steps = STEPS[mode].slice();
+    steps.unshift('Kundenprofil „' + getClient().name + '" geladen');
+    steps.forEach((s,i)=>{ box.insertAdjacentHTML('beforeend', `<div class="load-step" id="ls${i}"><div class="spinner"></div><span>${s}</span></div>`); });
+    let i=0;
+    const tick = () => {
+      if (i>0){ const p=document.getElementById('ls'+(i-1)); p.classList.remove('active'); p.classList.add('done'); p.querySelector('.spinner').outerHTML='<span class="check">✓</span>'; }
+      if (i<steps.length){ document.getElementById('ls'+i).classList.add('active'); i++; setTimeout(tick, 620); }
+      else { setTimeout(()=>renderEditor(mode), 400); }
+    };
+    tick();
+  }
+
+  const CONTENT = {
+    sources: {
+      ressort: 'Lokales', words: 348,
+      headlines: ['Stadtrat beschließt neuen Radweg am Hauptbahnhof','Grünes Licht: Sicherer Radweg am Bahnhof kommt','Radverkehr in Musterhausen: Rat macht den Weg frei'],
+      teaser: 'Der Stadtrat hat in seiner Sitzung am Dienstag den Bau eines neuen, baulich getrennten Radwegs am Hauptbahnhof beschlossen. Baubeginn soll noch in diesem Jahr sein.',
+      body: [
+        'MUSTERHAUSEN. Radfahrerinnen und Radfahrer am Hauptbahnhof können sich auf mehr Sicherheit freuen: Der Stadtrat hat am Dienstagabend mehrheitlich für den Bau eines baulich getrennten Radwegs entlang der Bahnhofstraße gestimmt. Das Vorhaben war zuvor mehrere Monate in den Ausschüssen beraten worden.',
+        'Der rund 800 Meter lange Abschnitt gilt als einer der meistbefahrenen der Innenstadt. In den vergangenen Jahren war es dort wiederholt zu gefährlichen Situationen zwischen Rad- und Autoverkehr gekommen. Die neue Trasse soll durch einen erhöhten Bord vom Fahrbahnverkehr abgetrennt werden.',
+        '„Ein wichtiger Schritt für sichere Mobilität in unserer Stadt", sagte Bürgermeisterin Klein nach der Abstimmung. Die Kosten bezifferte die Verwaltung auf rund 1,2 Millionen Euro, von denen ein Teil über Landesmittel gefördert wird.',
+        'Baubeginn soll noch in diesem Jahr erfolgen. Während der Bauzeit ist mit Einschränkungen für den Autoverkehr zu rechnen. Die Fertigstellung ist für das Frühjahr 2027 geplant.'
+      ],
+      sources: [['dpa','https://dpa.com/stadtrat-radweg-beschluss'],['Stadt Musterhausen','https://stadt-musterhausen.de/presse/radverkehr-2026']],
+      facts: ['Beschluss-Datum mit Quelle 1 & 2 abgeglichen','Zitat Bürgermeisterin wörtlich aus Notiz übernommen','Kostenangabe (1,2 Mio. €) durch Quelle 2 gedeckt','Kein Faktum ohne Quellenbeleg im Text']
+    },
+    idea: {
+      ressort: 'Gesundheit', words: 372,
+      headlines: ['Pflegenotstand in der Region: Kliniken schlagen Alarm','Wenn Betten leer bleiben müssen: Der Pflegemangel vor Ort','Fachkräftemangel trifft regionale Pflege mit voller Wucht'],
+      teaser: 'In den Kliniken der Region fehlt es an allen Ecken an Pflegekräften. Häuser müssen Betten sperren, Beschäftigte berichten von Dauerbelastung — eine Spurensuche.',
+      body: [
+        'REGION. Der Fachkräftemangel in der Pflege ist längst in den Kliniken der Region angekommen. Nach Angaben mehrerer Häuser können Stationen zeitweise nur eingeschränkt betrieben werden, weil qualifiziertes Personal fehlt. Betroffen sind sowohl große Kliniken als auch kleinere Einrichtungen im Umland.',
+        'Besonders deutlich wird die Lage auf den Intensivstationen. „Wir müssen regelmäßig Betten sperren, weil wir sie personell nicht sicher betreiben können", berichtet eine Pflegekraft, die anonym bleiben möchte. Die Belastung für das verbliebene Team steige dadurch weiter.',
+        'Zahlen der zuständigen Behörden stützen den Eindruck: Die Zahl offener Stellen in der Pflege ist in den vergangenen fünf Jahren deutlich gestiegen, während die Zahl der Berufsabschlüsse kaum Schritt hält. Fachleute nennen als Ursachen unter anderem Bezahlung, Arbeitsbelastung und Schichtdienste.',
+        'Die Kliniken setzen gegenzusteuern: mit Anwerbeprogrammen im Ausland, flexibleren Arbeitszeitmodellen und Kooperationen mit Pflegeschulen. Ob das reicht, ist offen. „Wir kämpfen um jede Kraft", heißt es aus der Verwaltung eines Hauses.'
+      ],
+      sources: [['Statistik Landesamt','https://statistik-land.de/pflege-arbeitsmarkt'],['Deutscher Pflegerat','https://deutscher-pflegerat.de/zahlen'],['Recherche Klinik-Pressestellen','https://intern/recherche-2026']],
+      facts: ['Zahlen mit Landesamt-Statistik abgeglichen','Anonymes Zitat als solches gekennzeichnet','Ursachen durch 2 unabhängige Quellen gedeckt','Hinweis: Zitat Verwaltung vor Druck gegenlesen lassen']
+    }
+  };
+
+  let selectedHeadline = 0;
+  function renderEditor(mode) {
+    const c = CONTENT[mode];
+    document.getElementById('art-teaser').textContent = c.teaser;
+    document.getElementById('art-body').innerHTML = c.body.map(p=>`<p contenteditable="true">${p}</p>`).join('');
+    const hv = document.getElementById('hv-list');
+    hv.innerHTML = c.headlines.map((h,i)=>`<div class="hv ${i===0?'sel':''}" onclick="pickHeadline(${i})"><div class="radio"></div><span>${h}</span></div>`).join('');
+    selectedHeadline = 0;
+    document.getElementById('art-sources').innerHTML = c.sources.map((s,i)=>`<div class="src"><div class="num">${i+1}</div><a href="${s[1]}" target="_blank">${s[0]}</a></div>`).join('');
+    document.getElementById('art-facts').innerHTML = c.facts.map(f=>`<div class="fact"><span class="ic">✓</span><span>${f}</span></div>`).join('');
+    document.getElementById('m-words').textContent = c.words;
+    document.getElementById('m-ressort').textContent = c.ressort;
+    document.getElementById('m-ctx').textContent = getClient().name;
+    go('editor');
+  }
+  function pickHeadline(i){ selectedHeadline=i; document.querySelectorAll('.hv').forEach((el,idx)=>el.classList.toggle('sel', idx===i)); }
+
+  /* ---- Prompt-Vorschau ---- */
+  const SYSTEM_PROMPT = `Du bist der Schreib-Motor von „Rohling". Du schreibst wie ein erfahrener Redakteur im Auftrag eines bestimmten Kunden — nicht wie ein Chatbot oder Pressesprecher.
+
+OBERSTE REGEL: Substanz vor Stil. Jede Tatsachenbehauptung muss durch das Material gedeckt sein.
+FAKTEN: Nutze nur Fakten aus Quellen/Kontext/Auftrag. Erfinde keine Zahlen, Namen, Zitate, Daten. Fehlt etwas → "offene_fragen". Zitate nur wörtlich aus dem Material.
+STIL: Schreibe exakt nach dem Kunden-Stilblock. Imitiere den Ton der Stilvorlagen (nicht deren Inhalte). Keine Buzzwords, keine Floskeln.
+AUSGABE: Antworte nur mit gültigem JSON (ueberschrift_varianten, teaser, body[], quellen[], faktencheck[], seo{}, offene_fragen[]).
+VERBOTEN: „spielt eine entscheidende Rolle", „Game-Changer", „mehr denn je", „in der heutigen schnelllebigen Welt" u. ä.`;
+
+  function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function openPrompt(mode){
+    const c = getClient();
+    const styleBlock = `KUNDE: ${c.name}\n${c.context}`;
+    const exBlock = (c.examples&&c.examples.length)
+      ? c.examples.map((e,i)=>`<beispiel_${i+1}> ${e}\n{voller Text des echten Kundenartikels} </beispiel_${i+1}>`).join('\n\n')
+      : '(noch keine Stilvorlagen hinterlegt — Ton wird nur über den Stilblock gesteuert)';
+    let task;
+    if(mode==='sources'){
+      const links = (document.getElementById('src-links').value||'').trim().split('\n').filter(Boolean);
+      const notes = document.getElementById('src-notes').value||'';
+      const tone = (document.querySelector('#src-tone .chip.on')||{}).textContent||'';
+      task = `AUFTRAG\nModus: aus Quellen\nRessort: ${document.getElementById('src-ressort').value}\nLänge: ${document.getElementById('src-len').value}\nTonalität: ${tone}\n\nQUELLEN\n${links.map((l,i)=>`[${i+1}] ${l} — {extrahierter Volltext}`).join('\n')||'(keine)'}\n\nNOTIZEN\n${notes||'(keine)'}`;
+    } else {
+      task = `AUFTRAG\nModus: aus Idee\nRessort: ${document.getElementById('idea-ressort').value}\nLänge: ${document.getElementById('idea-len').value}\n\nTHEMA: ${document.getElementById('idea-topic').value}\nBLICKWINKEL: ${document.getElementById('idea-angle').value||'(offen)'}\n\nRECHERCHIERTE QUELLEN\n[1..n] {werden per Websuche gesammelt}`;
+    }
+    const docs = c.files.length ? '\n\nKONTEXT-DOKUMENTE (Kunde)\n'+c.files.map(f=>'• '+f).join('\n') : '';
+    document.getElementById('prompt-content').innerHTML =
+      `<div class="seg"><span class="seg-label sl-system">1 · System-Prompt (fix)</span><pre>${esc(SYSTEM_PROMPT)}</pre></div>`+
+      `<div class="seg"><span class="seg-label sl-style">2 · Kunden-Stilblock</span><pre>${esc(styleBlock+docs)}</pre></div>`+
+      `<div class="seg"><span class="seg-label sl-examples">3 · Stilvorlagen (Few-Shot)</span><pre>${esc(exBlock)}</pre></div>`+
+      `<div class="seg"><span class="seg-label sl-task">4 · Auftrag</span><pre>${esc(task)}</pre></div>`;
+    document.getElementById('prompt-overlay').classList.remove('hidden');
+  }
+  function closePrompt(){ document.getElementById('prompt-overlay').classList.add('hidden'); }
+
+  let toastTimer;
+  function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200); }
+</script>
+</body>
+</html>

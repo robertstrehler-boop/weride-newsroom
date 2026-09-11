@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WE RIDE Newsroom — Prototyp</title>
+<style>
+  :root{
+    --bg:#ffffff; --ink:#14171c; --dim:#6b7280; --line:#e6e8ec; --surf:#f7f8fa; --accent:#ff2e7e;
+    --ok:#1f9d57; --amber:#c98a00; --bad:#d33a2c;
+    --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--sans);background:var(--surf);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;}
+  .app{max-width:1180px;margin:0 auto;background:var(--bg);min-height:100vh;}
+
+  /* header */
+  .bar{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:20;flex-wrap:wrap;row-gap:10px;}
+  .logo{display:flex;align-items:center;gap:10px;}
+  .logo .w{width:30px;height:24px;border:2px solid var(--ink);border-radius:3px;display:grid;place-items:center;font-weight:900;font-size:12px;font-style:italic;}
+  .logo b{font-size:16px;font-weight:800;letter-spacing:.05em;}
+  .region{background:var(--accent);color:#fff;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:6px;}
+  .right{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end;}
+  .live{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(255,46,126,.5);animation:pl 1.8s infinite;}
+  @keyframes pl{70%{box-shadow:0 0 0 6px rgba(255,46,126,0);}100%{box-shadow:0 0 0 0 rgba(255,46,126,0);}}
+  .stackbtn{display:flex;align-items:center;gap:9px;background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:9px 15px;border-radius:22px;}
+  .stackbtn .n{background:var(--accent);color:#fff;border-radius:50%;min-width:20px;height:20px;padding:0 5px;display:grid;place-items:center;font-size:11px;}
+
+  /* filters */
+  .filters{display:flex;gap:8px;padding:14px 22px;overflow-x:auto;border-bottom:1px solid var(--line);position:sticky;top:55px;background:var(--bg);z-index:19;}
+  .filters::-webkit-scrollbar{display:none;}
+  .chip{white-space:nowrap;padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:#fff;font-size:13px;font-weight:600;color:var(--dim);}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  /* grid */
+  .wrap{padding:18px 22px 60px;}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;grid-auto-flow:dense;}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr);}}
+  @media(max-width:520px){.grid{grid-template-columns:1fr;}}
+  .card{position:relative;border-radius:10px;overflow:hidden;min-height:168px;cursor:pointer;transition:transform .12s ease, box-shadow .12s ease;}
+  .card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.12);}
+  .card.hero{grid-column:span 2;grid-row:span 2;min-height:349px;}
+  @media(max-width:520px){.card.hero{grid-column:span 1;grid-row:span 1;min-height:200px;}}
+  .img{position:absolute;inset:0;}
+  .shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,12,16,.86) 0%,rgba(10,12,16,.12) 48%,transparent 72%);}
+  .p1{background:linear-gradient(160deg,#8ec5e8,#3f6f9e);}.p2{background:linear-gradient(160deg,#c9cdd2,#8a9199);}.p3{background:linear-gradient(160deg,#e0a06a,#9c5a2e);}.p4{background:linear-gradient(160deg,#8fb98f,#4d7a52);}.p5{background:linear-gradient(160deg,#7f8bd6,#3f478f);}.p6{background:linear-gradient(160deg,#d68f9f,#8a4658);}.p7{background:linear-gradient(160deg,#9ac0d0,#4f8296);}.p8{background:linear-gradient(160deg,#cfc07a,#8a7a35);}
+  .rtag{position:absolute;top:10px;left:10px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:5px;}
+  .kira{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.93);color:var(--ink);font-size:11px;font-weight:800;padding:6px 10px;border-radius:8px;opacity:0;transition:opacity .12s;}
+  .card:hover .kira{opacity:1;}
+  .kira .s{color:var(--accent);}
+  .add{position:absolute;bottom:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.95);color:var(--ink);display:grid;place-items:center;font-size:19px;font-weight:400;opacity:0;transition:opacity .12s;}
+  .card:hover .add{opacity:1;}
+  .cap{position:absolute;left:0;right:0;bottom:0;padding:13px;}
+  .cap h3{color:#fff;font-weight:800;letter-spacing:-.01em;line-height:1.16;margin:0 0 6px;font-size:14.5px;}
+  .card.hero .cap h3{font-size:23px;}
+  .cap .meta{color:#dfe3ea;font-size:11.5px;font-weight:600;display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+  .cap .meta .new{background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;}
+  .empty{grid-column:1/-1;text-align:center;color:var(--dim);padding:60px 0;font-size:14px;}
+  .kbanner{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:10px;background:linear-gradient(90deg,rgba(123,92,255,.10),rgba(255,46,126,.07));border:1px solid #e6d9ff;border-radius:10px;padding:11px 15px;font-size:13px;color:var(--ink);cursor:pointer;}
+  .kbanner b{color:#7b5cff;} .kbanner .lnk{color:var(--accent);font-weight:700;font-size:12.5px;white-space:nowrap;}
+  .rtag.kira{background:#7b5cff;}
+  .kbadge{background:#7b5cff !important;}
+  .findbtn{background:#fff;border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:20px;white-space:nowrap;}
+  .findbtn .s{color:#7b5cff;}
+  .kreason{background:rgba(123,92,255,.08);border:1px solid #e6d9ff;border-radius:10px;padding:11px 13px;margin-bottom:12px;font-size:13px;line-height:1.5;}
+  .kreason b{color:#7b5cff;}
+  .vortag{background:#e6e8ec;color:#6b7280;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;margin-right:2px;}
+  .agehint{background:rgba(201,138,0,.20);color:#ffd98a;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;margin-right:2px;}
+  .card.isvortag .img{filter:grayscale(.35) brightness(.82);}
+  .editorchip{width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;font-weight:800;font-size:12px;display:grid;place-items:center;flex-shrink:0;}
+  .editormenu{position:absolute;top:56px;right:16px;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.16);padding:6px;display:none;z-index:35;}
+  .editormenu.on{display:block;}
+  .editormenu .em{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;white-space:nowrap;}
+  .editormenu .em:hover{background:var(--surf);}
+  .editormenu .em .ini{width:26px;height:26px;border-radius:50%;background:var(--ink);color:#fff;font-weight:800;font-size:11px;display:grid;place-items:center;}
+  .editormenu .em.on{color:var(--accent);font-weight:700;}
+  .eo{position:fixed;inset:0;background:rgba(10,12,16,.55);display:none;place-items:center;z-index:80;padding:24px;}
+  .eo.on{display:grid;}
+  .eo .box{background:#fff;border-radius:16px;padding:22px;max-width:440px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.4);}
+  .eo h3{font-size:18px;font-weight:800;} .eo p{color:var(--dim);font-size:13px;line-height:1.5;}
+  .eo .inits{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:16px;}
+  .eo .ib{width:64px;height:64px;border-radius:16px;border:1px solid var(--line);background:var(--surf);font-weight:800;font-size:18px;cursor:pointer;color:var(--ink);}
+  .eo .ib:hover{border-color:var(--accent);color:var(--accent);}
+  .eo .fl{display:block;font-size:11px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+  .eo .fi{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 12px;font-size:13.5px;color:var(--ink);background:#fff;font-family:inherit;outline:none;}
+  .eo .fi:focus{border-color:var(--accent);}
+  .eo textarea.fi{resize:vertical;}
+  .pubrow{display:flex;gap:12px;align-items:center;padding:11px;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;}
+  .pub-daylabel{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);margin:14px 0 8px;display:flex;align-items:center;gap:8px;}
+  .pub-daylabel span{background:var(--surf);border:1px solid var(--line);border-radius:20px;padding:1px 8px;font-size:10.5px;color:var(--ink);}
+  .pub-group:first-child .pub-daylabel{margin-top:2px;}
+  .pubrow .pini{width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;font-weight:800;font-size:12px;display:grid;place-items:center;flex-shrink:0;}
+  .pubrow .pm{flex:1;min-width:0;} .pubrow .pm b{font-size:13.5px;font-weight:700;display:block;line-height:1.2;} .pubrow .pm span{font-size:11.5px;color:var(--dim);}
+  .pubrow .pdl{background:#fff;border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700;color:var(--ink);}
+  .inboxbtn{background:#fff;border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:20px;white-space:nowrap;display:flex;align-items:center;gap:7px;}
+  .inboxbtn .n{background:var(--ink);color:#fff;border-radius:50%;min-width:19px;height:19px;padding:0 5px;display:grid;place-items:center;font-size:10.5px;}
+  .mscrim2{position:fixed;inset:0;background:rgba(10,12,16,.5);opacity:0;pointer-events:none;transition:opacity .2s;z-index:64;}
+  .mscrim2.on{opacity:1;pointer-events:auto;}
+  .sicht{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;width:700px;max-width:93vw;max-height:86vh;background:var(--bg);border-radius:16px;overflow:hidden;z-index:65;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.4);transition:opacity .2s,transform .2s;}
+  .sicht.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+  .sicht-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);gap:10px;}
+  .sicht-head h2{font-size:18px;font-weight:800;} .sicht-head .sub{font-size:12px;color:var(--dim);margin-top:2px;}
+  .sicht-actions{display:flex;align-items:center;gap:10px;}
+  .s-all{background:var(--ink);color:#fff;font-weight:700;font-size:12.5px;padding:9px 13px;border-radius:9px;white-space:nowrap;}
+  .s-refresh{background:#fff;border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:12.5px;padding:9px 13px;border-radius:9px;white-space:nowrap;cursor:pointer;}
+  .s-refresh:hover{border-color:var(--accent);color:var(--accent);}
+  .s-refresh:disabled{opacity:.6;cursor:not-allowed;}
+  .s-x{color:var(--dim);font-size:24px;line-height:1;}
+  .sicht-list{overflow-y:auto;padding:12px 16px;}
+  .srow{display:flex;gap:12px;align-items:center;padding:11px;border:1px solid var(--line);border-radius:11px;margin-bottom:9px;}
+  .srel{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;font-weight:800;font-size:15px;flex-shrink:0;color:#fff;}
+  .srel.hi{background:#1f9d57;} .srel.mid{background:#c98a00;} .srel.lo{background:#c2c7cf;color:#14171c;}
+  .smeta{flex:1;min-width:0;} .smeta b{font-size:14px;font-weight:700;display:block;line-height:1.2;} .smeta .mm{font-size:11.5px;color:var(--dim);margin-top:2px;} .smeta .rr{font-size:11.5px;color:#7b5cff;margin-top:3px;}
+  .sbtns{display:flex;gap:6px;flex-shrink:0;}
+  .s-ok{background:var(--accent);color:#fff;font-weight:700;font-size:12px;padding:9px 12px;border-radius:9px;}
+  .s-no{background:#fff;border:1px solid var(--line);color:var(--dim);font-weight:700;font-size:12px;padding:9px 12px;border-radius:9px;}
+  @media(max-width:560px){ .srow{flex-wrap:wrap;} .sbtns{width:100%;} .s-ok,.s-no{flex:1;} }
+
+  /* stack drawer */
+  .scrim{position:fixed;inset:0;background:rgba(10,12,16,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40;}
+  .scrim.on{opacity:1;pointer-events:auto;}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:90vw;background:var(--bg);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .22s ease;z-index:41;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,.12);}
+  .drawer.on{transform:translateX(0);}
+  .dhead{display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--line);}
+  .dhead h2{font-size:17px;font-weight:800;} .dhead .sub{font-size:12px;color:var(--dim);}
+  .dhead .x{margin-left:auto;color:var(--dim);font-size:22px;line-height:1;}
+  .ditems{flex:1;overflow-y:auto;padding:14px 16px;}
+  .ditem{display:flex;gap:11px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:11px;padding:9px;margin-bottom:9px;}
+  .ditem .th{width:44px;height:44px;border-radius:8px;flex-shrink:0;}
+  .ditem .m{flex:1;min-width:0;} .ditem .m b{font-size:13px;font-weight:700;line-height:1.2;display:block;} .ditem .m span{font-size:11px;color:var(--dim);}
+  .newpill{background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.03em;vertical-align:1px;}
+  .ditem .rm{color:#c2c7cf;font-size:16px;flex-shrink:0;padding:4px;}
+  .ditem .rm:hover{color:var(--accent);}
+  .dempty{text-align:center;color:var(--dim);padding:50px 16px;font-size:13.5px;line-height:1.6;}
+  .dfoot{padding:14px 16px;border-top:1px solid var(--line);}
+  .process{width:100%;background:var(--accent);color:#fff;font-weight:800;font-size:15px;padding:14px;border-radius:12px;}
+  .process:disabled{opacity:.4;cursor:not-allowed;}
+  .process small{display:block;font-weight:600;font-size:11px;opacity:.9;margin-top:2px;}
+
+  /* Arbeitsmaske */
+  .maske{position:fixed;inset:0;background:var(--bg);z-index:70;overflow-y:auto;display:none;flex-direction:column;}
+  .maske.on{display:flex;}
+  .mk-bar{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5;}
+  .mk-back{color:var(--dim);font-weight:700;font-size:13px;}
+  .mk-rtag{background:var(--accent);color:#fff;font-size:10px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:5px;}
+  .mk-ttl{font-size:14px;font-weight:800;max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .mk-prog{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--dim);font-weight:700;}
+  .mk-next{background:var(--ink);color:#fff;font-weight:700;font-size:12.5px;padding:8px 13px;border-radius:9px;}
+  .mk-cancel{background:#fff;border:1px solid var(--line);color:var(--dim);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:9px;cursor:pointer;}
+  .mk-cancel:hover{border-color:var(--bad);color:var(--bad);}
+  .mk-reassign{background:#fff;border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:12.5px;padding:8px 12px;border-radius:9px;cursor:pointer;}
+  .mk-reassign:hover{border-color:var(--accent);color:var(--accent);}
+  .mk-body{display:grid;grid-template-columns:1.5fr 1fr;flex:1;}
+  @media(max-width:820px){.mk-body{grid-template-columns:1fr;}}
+  .mk-left{padding:22px;border-right:1px solid var(--line);}
+  @media(max-width:820px){.mk-left{border-right:none;border-bottom:1px solid var(--line);}}
+  .mk-right{padding:16px;background:var(--surf);}
+  .mk-empty{text-align:center;padding:40px 16px;max-width:460px;margin:0 auto;}
+  .mk-empty .o{width:60px;height:60px;margin:0 auto 16px;filter:drop-shadow(0 6px 16px rgba(255,46,126,.28));}
+  .kira-mark-svg{display:block;width:100%;height:100%;}
+  .kira-ic{width:18px;height:18px;display:inline-block;vertical-align:-4px;flex-shrink:0;}
+  .mk-empty h2{font-size:20px;font-weight:800;margin-bottom:8px;}
+  .mk-empty p{color:var(--dim);font-size:13.5px;line-height:1.6;margin-bottom:18px;}
+  .mk-chosen{font-size:12.5px;color:var(--accent);font-weight:700;margin-bottom:14px;}
+  .mk-cta{background:var(--accent);color:#fff;font-weight:800;font-size:15px;padding:13px 22px;border-radius:12px;}
+  .mk-tabs{display:flex;gap:7px;align-items:center;margin-bottom:14px;}
+  .mk-tab{font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--dim);}
+  .mk-tab.on{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .mk-wc{margin-left:auto;font-size:11px;color:var(--dim);font-weight:600;}
+  .mk-art h1{font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.18;margin-bottom:10px;}
+  .mk-art .teaser{font-size:14px;font-weight:700;color:var(--accent);line-height:1.45;margin-bottom:12px;}
+  .mk-art p{font-size:14px;line-height:1.62;color:#2b2f36;margin-bottom:10px;}
+  .mk-art p mark{background:rgba(201,138,0,.16);padding:0 2px;border-radius:3px;}
+  .mk-art [contenteditable]:focus,.mk-take [contenteditable]:focus{outline:2px solid rgba(255,46,126,.35);border-radius:4px;}
+  .mk-take{margin-top:18px;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:var(--surf);}
+  .mk-take-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .mk-take-h span{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);}
+  .mk-copy{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;color:var(--ink);cursor:pointer;}
+  .mk-copy:hover{border-color:var(--accent);color:var(--accent);}
+  .mk-copyrow{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px;}
+  .mk-take ol{margin:0;padding-left:20px;} .mk-take li{font-size:13.5px;line-height:1.5;margin-bottom:5px;color:#2b2f36;}
+  .mk-tools{display:flex;gap:7px;flex-wrap:wrap;margin-top:16px;}
+  .mk-tchip{font-size:12px;font-weight:700;color:var(--ink);background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:8px 12px;}
+  .mk-kh{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .mk-orb{width:34px;height:34px;flex-shrink:0;filter:drop-shadow(0 3px 8px rgba(255,46,126,.28));}
+  .mk-kh b{font-size:14px;font-weight:800;} .mk-kh span{display:block;font-size:11px;color:var(--dim);font-weight:600;}
+  .mk-krun{width:100%;background:var(--accent);color:#fff;font-weight:800;font-size:14px;padding:13px;border-radius:12px;}
+  .mk-kwait{color:var(--dim);font-size:13px;line-height:1.6;text-align:center;padding:16px 6px;}
+  .mk-kl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin:14px 0 8px;}
+  .mk-src{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;padding:7px 0;border-top:1px solid var(--line);}
+  .mk-src:first-of-type{border-top:none;} .mk-src .nm{flex:1;font-weight:600;min-width:0;} .mk-src .cr{font-size:9.5px;font-weight:800;padding:2px 7px;border-radius:20px;flex-shrink:0;margin-top:1px;}
+  .mk-src .nm a{color:var(--accent);text-decoration:none;word-break:break-all;} .mk-src .nm a:hover{text-decoration:underline;}
+  .mk-src .hint{display:block;font-size:10.5px;color:var(--dim);font-weight:500;margin-top:2px;line-height:1.35;}
+  .cr-p{background:rgba(31,157,87,.14);color:var(--ok);} .cr-m{background:rgba(201,138,0,.16);color:var(--amber);}
+  .mk-fact{display:flex;gap:8px;align-items:flex-start;padding:6px 0;}
+  .mk-fact .b{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;flex-shrink:0;}
+  .b-ok{background:rgba(31,157,87,.14);color:var(--ok);} .b-pr{background:rgba(201,138,0,.16);color:var(--amber);} .b-bd{background:rgba(211,58,44,.13);color:var(--bad);}
+  .mk-fact p{margin:0;font-size:12.5px;line-height:1.4;} .mk-fact p span{color:var(--dim);font-size:11px;}
+  .mk-ang{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:6px 10px;border:1px solid var(--line);border-radius:20px;background:#fff;color:var(--dim);margin:0 5px 6px 0;}
+  .mk-ang.on{border-color:var(--accent);color:var(--accent);background:rgba(255,46,126,.06);}
+  .mk-kinput{margin-top:12px;display:flex;gap:7px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:11px;padding:9px 12px;}
+  .mk-kinput input{flex:1;border:none;font-size:12px;color:var(--ink);outline:none;background:transparent;}
+  .mk-kinput .go{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px;flex-shrink:0;cursor:pointer;}
+  .mk-kanswer{background:#fff;border:1px solid #e6d9ff;border-radius:11px;padding:11px 13px;font-size:12.5px;line-height:1.5;color:#2b2f36;margin-bottom:4px;}
+  .mk-kanswer b{color:#7b5cff;} .mk-kanswer .a{margin-top:6px;}
+  .mk-srclink{margin:0 0 4px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:10px;}
+  .mk-srcrow{display:flex;align-items:center;gap:8px;}
+  .mk-srcrow a{flex:1;min-width:0;font-size:12.5px;color:var(--blue,#1a4a8a);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .mk-srcrow a:hover{text-decoration:underline;}
+  .mk-copylink{background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:11.5px;font-weight:700;color:var(--ink);white-space:nowrap;}
+  .mk-srcinput{flex:1;min-width:0;font-size:12px;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;background:var(--surf);font-family:ui-monospace,monospace;outline:none;}
+  .mk-srcinput:focus{border-color:var(--accent);}
+  .mk-srcopen{display:inline-block;margin-top:8px;font-size:11.5px;font-weight:700;color:var(--accent);text-decoration:none;}
+  .mk-srcopen:hover{text-decoration:underline;}
+  .mk-foot{display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid var(--line);background:#fff;position:sticky;bottom:0;flex-wrap:wrap;}
+  .mk-seo{flex:1;min-width:180px;font-size:11.5px;color:var(--dim);line-height:1.5;}
+  .mk-discard{background:#fff;border:1px solid var(--line);color:var(--dim);font-weight:700;font-size:13px;padding:11px 15px;border-radius:11px;cursor:pointer;}
+  .mk-discard:hover{border-color:var(--bad);color:var(--bad);}
+  .mk-save{background:#fff;border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:13px;padding:11px 15px;border-radius:11px;}
+  .mk-save:disabled,.mk-exp:disabled{opacity:.4;cursor:not-allowed;}
+  .mk-exp{background:var(--accent);color:#fff;font-weight:800;font-size:13.5px;padding:11px 17px;border-radius:11px;}
+  .mk-spin{width:24px;height:24px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:mkspin .7s linear infinite;margin:0 auto 12px;}
+  @keyframes mkspin{to{transform:rotate(360deg);}}
+
+  /* detail modal */
+  .mscrim{position:fixed;inset:0;background:rgba(10,12,16,.5);opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;}
+  .mscrim.on{opacity:1;pointer-events:auto;}
+  .mcard{position:fixed;top:50%;left:50%;transform:translate(-50%,-46%) scale(.98);opacity:0;pointer-events:none;width:580px;max-width:92vw;max-height:88vh;background:var(--bg);border-radius:16px;overflow:hidden;z-index:51;transition:opacity .2s, transform .2s;display:flex;flex-direction:column;box-shadow:0 30px 80px rgba(0,0,0,.4);}
+  .mcard.on{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+  .mimg{height:220px;position:relative;flex-shrink:0;}
+  .mx{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.92);color:var(--ink);font-size:20px;display:grid;place-items:center;}
+  .mbody{padding:18px 20px;overflow-y:auto;}
+  .mbody h2{font-size:21px;font-weight:800;letter-spacing:-.01em;line-height:1.2;margin-bottom:8px;}
+  .mmeta{font-size:12.5px;color:var(--dim);font-weight:600;display:flex;gap:7px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .mmeta .new{background:var(--accent);color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;text-transform:uppercase;}
+  .manriss{font-size:14px;line-height:1.6;color:#333;margin-bottom:16px;}
+  .mqlabel{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:8px;}
+  .msrc{font-size:13px;padding:6px 0;border-top:1px solid var(--line);} .msrc:first-of-type{border-top:none;} .msrc .mn{color:var(--accent);font-weight:700;font-family:ui-monospace,monospace;font-size:11px;margin-right:6px;}
+  .mfoot{display:flex;gap:9px;padding:14px 20px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .mstack{background:var(--accent);color:#fff;font-weight:800;font-size:14px;padding:12px 16px;border-radius:11px;flex:1;min-width:150px;}
+  .mstack.on{background:var(--ink);}
+  .mghost{background:#fff;border:1px solid var(--line);color:var(--ink);font-weight:700;font-size:13px;padding:12px 14px;border-radius:11px;}
+  .mghost .s{color:var(--accent);}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-weight:600;font-size:13.5px;z-index:60;transition:transform .3s;box-shadow:0 8px 30px rgba(0,0,0,.25);}
+  .toast.on{transform:translateX(-50%) translateY(0);}
+  .hintbar{font-size:11.5px;color:var(--dim);font-weight:600;padding:12px 22px 0;}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="kira-mark" viewBox="0 0 100 100">
+    <defs><linearGradient id="kiraGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF5BA6"/><stop offset="1" stop-color="#E01E6A"/>
+    </linearGradient></defs>
+    <circle cx="50" cy="46" r="34" fill="url(#kiraGrad)"/>
+    <path d="M27 66 L13 90 L45 77 Z" fill="url(#kiraGrad)"/>
+    <path d="M50 27 C52.5 40.5 57 45 70 46 C57 47 52.5 51.5 50 65 C47.5 51.5 43 47 30 46 C43 45 47.5 40.5 50 27 Z" fill="#fff"/>
+  </symbol>
+</svg>
+<div class="app">
+  <div class="bar">
+    <div class="logo"><b>WE RIDE NEWSROOM</b></div>
+    <div class="right">
+      <span class="live"><span class="dot"></span>Live · <span id="live-count">–</span> heute</span>
+      <button class="inboxbtn" onclick="openSichtung()">Sichtung <span class="n" id="inbox-n">0</span></button>
+      <button class="findbtn" onclick="openOwn()"><span class="s" style="color:var(--accent)">＋</span> Eigenes Thema</button>
+      <button class="findbtn" onclick="openFind()"><span class="s">✦</span> Themen finden</button>
+      <button class="stackbtn" onclick="toggleDrawer(true)">Mein Stack <span class="n" id="stack-n">0</span></button>
+      <button class="inboxbtn" onclick="openDrafts()">Entwürfe <span class="n" id="draft-n">0</span></button>
+      <button class="inboxbtn" onclick="openPublished()">Veröffentlicht <span class="n" id="pub-n">0</span></button>
+      <button class="editorchip" id="editorchip" onclick="toggleEditorMenu(event)">?</button>
+      <div class="editormenu" id="editormenu"></div>
+      <div class="editormenu" id="reassign-menu"></div>
+    </div>
+  </div>
+
+  <div class="filters" id="filters"></div>
+  <div class="hintbar">Klick auf <b>＋</b> legt direkt auf den Stack · Klick auf die Meldung öffnet sie zum Reinschauen</div>
+
+  <div class="wrap"><div class="grid" id="grid"></div></div>
+</div>
+
+<div class="scrim" id="scrim" onclick="toggleDrawer(false)"></div>
+<aside class="drawer" id="drawer">
+  <div class="dhead"><div><h2>Mein Stack</h2><div class="sub" id="stack-sub">Deine Schicht heute</div></div><button class="x" onclick="toggleDrawer(false)">×</button></div>
+  <div class="ditems" id="ditems"></div>
+  <div class="dfoot"><button class="process" id="process" onclick="processStack()">Stack verarbeiten →<small id="process-sub">nacheinander durcharbeiten</small></button></div>
+</aside>
+
+<div class="eo" id="editor-overlay">
+  <div class="box">
+    <h3>Wer arbeitet heute?</h3>
+    <p>Wähle dein Kürzel — der Newsroom merkt es sich und zeigt dir deinen Stack und deine Meldungen.</p>
+    <div class="inits">
+      <button class="ib" onclick="setEditor('LO')">LO</button>
+      <button class="ib" onclick="setEditor('AH')">AH</button>
+      <button class="ib" onclick="setEditor('ZC')">ZC</button>
+      <button class="ib" onclick="setEditor('RS')">RS</button>
+      <button class="ib" onclick="setEditor('JS')">JS</button>
+    </div>
+  </div>
+</div>
+
+<div class="eo" id="pub-overlay">
+  <div class="box" style="max-width:660px;max-height:82vh;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0">Veröffentlicht — Historie</h3><button onclick="closePublished()" style="font-size:24px;color:var(--dim);line-height:1">×</button></div>
+    <p style="margin-bottom:12px">Fertige Meldungen, an WordPress übergeben.</p>
+    <div id="pub-list" style="overflow-y:auto"></div>
+  </div>
+</div>
+
+<div class="eo" id="find-overlay">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0;display:flex;align-items:center;gap:8px"><svg class="kira-ic" viewBox="0 0 100 100"><use href="#kira-mark"/></svg>KIRA — Themen finden</h3><button onclick="closeFind()" style="font-size:24px;color:var(--dim);line-height:1">×</button></div>
+    <p>KIRA durchsucht das Netz nach aktuellen, belegten Themen — jedes mit Quelle. Frei formulieren oder leer lassen für allgemeine WE-RIDE-Themen.</p>
+    <input id="find-q" class="fi" placeholder="z. B. Was gibt es Neues aus dem BMV?" onkeydown="if(event.key==='Enter')runFind()">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+      <button class="mk-tchip" onclick="setFindQ('Was gibt es Neues aus dem BMV?')">BMV</button>
+      <button class="mk-tchip" onclick="setFindQ('Radverkehr Förderung Kommune')">Förderung</button>
+      <button class="mk-tchip" onclick="setFindQ('E-Bike Markt Zahlen')">Marktzahlen</button>
+      <button class="mk-tchip" onclick="setFindQ('Radentscheid')">Radentscheide</button>
+      <button class="mk-tchip" onclick="setFindQ('ADFC')">ADFC</button>
+    </div>
+    <button class="mk-cta" style="width:100%;margin-top:14px" id="find-go" onclick="runFind()">KIRA suchen lassen</button>
+  </div>
+</div>
+
+<div class="eo" id="draft-overlay">
+  <div class="box" style="max-width:660px;max-height:82vh;display:flex;flex-direction:column">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0">Entwürfe — geteilt</h3><button onclick="closeDrafts()" style="font-size:24px;color:var(--dim);line-height:1">×</button></div>
+    <p style="margin-bottom:12px">Gespeicherte Entwürfe aller Redakteure. Zum Weiterarbeiten öffnen.</p>
+    <div id="draft-list" style="overflow-y:auto"></div>
+  </div>
+</div>
+
+<div class="eo" id="own-overlay">
+  <div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">Eigenes Thema anlegen</h3><button onclick="closeOwn()" style="font-size:24px;color:var(--dim);line-height:1">×</button></div>
+    <p>Für ein selbst entdecktes Thema oder eine eigene WE-RIDE-Geschichte. Landet als Kachel im Grid.</p>
+    <label class="fl">Titel</label>
+    <input id="own-title" class="fi" placeholder="Worum geht es?">
+    <div style="display:flex;gap:10px;margin-top:10px">
+      <div style="flex:1"><label class="fl">Region</label><select id="own-region" class="fi"></select></div>
+      <div style="flex:1"><label class="fl">Schlagwort</label><input id="own-topic" class="fi" placeholder="#WE-RIDE"></div>
+    </div>
+    <label class="fl" style="margin-top:10px">Link zur Quelle (optional)</label>
+    <input id="own-url" class="fi" placeholder="https://…  — KIRA holt daraus den Text">
+    <label class="fl" style="margin-top:10px">Notiz für KIRA (optional)</label>
+    <textarea id="own-note" class="fi" rows="2" placeholder="Blickwinkel, Kontext, worauf achten?"></textarea>
+    <button class="mk-cta" style="width:100%;margin-top:14px" onclick="addOwnStory()">Ins Grid legen</button>
+  </div>
+</div>
+
+<div class="mscrim2" id="sicht-scrim" onclick="closeSichtung()"></div>
+<div class="sicht" id="sicht">
+  <div class="sicht-head">
+    <div><h2>Sichtung</h2><div class="sub" id="sicht-sub">Von KIRA vorgefiltert — du entscheidest, was in den Newsroom kommt</div></div>
+    <div class="sicht-actions"><button class="s-refresh" onclick="refreshSichtung(this)">↻ Neue Alerts holen</button><button class="s-all" onclick="approveAll()">Alle relevanten übernehmen</button><button class="s-x" onclick="closeSichtung()">×</button></div>
+  </div>
+  <div class="sicht-list" id="sicht-list"></div>
+</div>
+
+<section class="maske" id="maske"></section>
+
+<div class="mscrim" id="mscrim" onclick="closeDetail()"></div>
+<div class="mcard" id="mcard">
+  <div class="mimg" id="m-img"><span class="rtag" id="m-tag"></span><button class="mx" onclick="closeDetail()">×</button></div>
+  <div class="mbody">
+    <h2 id="m-title"></h2>
+    <div class="mmeta" id="m-meta"></div>
+    <div class="manriss" id="m-anriss"></div>
+    <div class="mqlabel">Quellen</div>
+    <div id="m-sources"></div>
+  </div>
+  <div class="mfoot">
+    <button class="mstack" id="m-stackbtn" onclick="toggleStackDetail()"></button>
+    <button class="mghost" onclick="detailMask()">→ Arbeitsmaske</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STORIES = [];
+const _DEMO_STORIES = [
+  {id:1, title:"Bundeshaushalt 2027: Bund plant Kürzungen bei Fahrrad-Infrastruktur", land:"Bundesweit", ort:"Bundesweit", topic:"#Politik", sources:5, time:"vor 2 Min", sort:1998, img:"p1", neu:true},
+  {id:12, title:"Neuer Verkehrsminister ernannt — was das für den Radverkehr bedeutet", land:"Bundesweit", ort:"Bundesweit", topic:"#Politik", sources:4, time:"vor 5 Min", sort:1995, img:"p5", neu:true},
+  {id:3, title:"Grand Départ 2029 in (Ost-)Deutschland?", land:"Sachsen", ort:"Sachsen", topic:"#Event", sources:3, time:"vor 9 Min", sort:1991, img:"p4", neu:true},
+  {id:2, title:"400 gestohlene Räder wieder aufgetaucht", land:"Bayern", ort:"München", topic:"#Diebstahl", sources:3, time:"vor 20 Min", sort:1980, img:"p4", neu:true},
+  {id:5, title:"Tour de France 2026: Die Zahlen der Rundfahrt", land:"Bundesweit", ort:"Bundesweit", topic:"#Sport", sources:3, time:"08:20", sort:500, img:"p3"},
+  {id:4, title:"Fahrradmarkt in Turbulenzen: Branche baut Jobs ab", land:"Bundesweit", ort:"Bundesweit", topic:"#Handel", sources:6, time:"08:05", sort:485, img:"p2"},
+  {id:9, title:"European Peace Ride startet in diesem Jahr", land:"Sachsen", ort:"Sachsen", topic:"#Event", sources:2, time:"08:03", sort:483, img:"p4"},
+  {id:6, title:"Branche erkennt Potenzial von Frauen — Studie", land:"Bundesweit", ort:"Bundesweit", topic:"#Handel", sources:2, time:"07:55", sort:475, img:"p6"},
+  {id:7, title:"ADFC-Fahrradklima-Test startet am 1. September", land:"Bundesweit", ort:"Bundesweit", topic:"#Politik", sources:2, time:"07:44", sort:464, img:"p5"},
+  {id:10, title:"Harkortstraße nach Umbau für den Radverkehr eröffnet", land:"Sachsen", ort:"Leipzig", topic:"#Radweg", sources:2, time:"07:41", sort:461, img:"p1"},
+  {id:8, title:"Towards Tomorrow 2027: Neue Bike-Messe für die Branche", land:"Bundesweit", ort:"Bundesweit", topic:"#Event", sources:1, time:"07:40", sort:460, img:"p2"},
+  {id:11, title:"Neues Kreuzungskonzept vorgestellt", land:"Baden-Württ.", ort:"Heidelberg", topic:"#Radweg", sources:1, time:"07:38", sort:458, img:"p7"},
+  {id:20, title:"Radentscheid in Freiburg steht vor der Abstimmung", land:"Baden-Württ.", ort:"Freiburg", topic:"#Politik", sources:1, time:"entdeckt 06:00", sort:360, img:"p7", neu:true, kira:true, reason:"Aus dem kommunalen Sitzungskalender: Abstimmung diese Woche, bisher keine überregionale Berichterstattung — möglicher Erstbericht für WE RIDE."},
+  {id:21, title:"ZIV kündigt neue E-Bike-Marktzahlen für Q3 an", land:"Bundesweit", ort:"Bundesweit", topic:"#Handel", sources:2, time:"entdeckt 06:00", sort:359, img:"p2", neu:true, kira:true, reason:"Der Branchenverband ZIV veröffentlicht Quartalszahlen — datenbasierte Meldung mit hoher Relevanz für die Marktlage."},
+  {id:22, title:"Studie: Radschnellwege senken Pendelzeiten messbar", land:"Bundesweit", ort:"Bundesweit", topic:"#Radweg", sources:2, time:"entdeckt 06:00", sort:358, img:"p1", neu:true, kira:true, reason:"Frische Studie mit belastbaren Zahlen, passt zum Infrastruktur-Schwerpunkt und hat noch wenig mediale Konkurrenz."},
+  {id:13, title:"Fahrradstaffel der Polizei zieht Jahresbilanz", land:"Nordrhein-Westf.", ort:"Münster", topic:"#Politik", sources:2, time:"Gestern 16:20", sort:-100, img:"p4", vortag:true, agehint:"Läuft heute ab"},
+  {id:14, title:"Neue Fahrradstraße in Köln freigegeben", land:"Nordrhein-Westf.", ort:"Köln", topic:"#Radweg", sources:1, time:"Gestern 14:05", sort:-140, img:"p1", vortag:true, agehint:"Läuft heute ab"},
+];
+const DISCOVER_POOL = [];
+const _DEMO_DISCOVER = [
+  {title:"Kommune plant Fahrradzone in der Innenstadt", land:"Bayern", ort:"Augsburg", topic:"#Radweg", sources:1, img:"p4", reason:"Ratsvorlage online, noch unberichtet — lokaler Erstbericht möglich."},
+  {title:"Förderprogramm für Lastenräder wird verlängert", land:"Bundesweit", ort:"Bundesweit", topic:"#Politik", sources:2, img:"p5", reason:"Ministeriumsmitteilung mit konkreten Zahlen — relevant für Handel und Kommunen."},
+  {title:"Hersteller meldet Rückruf einer E-Bike-Serie", land:"Bundesweit", ort:"Bundesweit", topic:"#Handel", sources:2, img:"p2", reason:"Sicherheitsrelevant und für Leser direkt nützlich."}
+];
+let discoverIdx=0;
+
+// Sichtung: von KIRA vorgefilterte, nach Relevanz bewertete Shortlist aus den Alerts
+const INBOX=[];
+const _DEMO_INBOX=[
+  {id:1,title:"Bund stellt neue Radverkehrsstrategie vor",land:"Bundesweit",ort:"Bundesweit",topic:"#Politik",sources:4,img:"p5",relevance:92,reason:"Hohe Relevanz: Bundesebene, mehrere Quellen, kaum berichtet."},
+  {id:2,title:"Dresden weiht neue Fahrradbrücke ein",land:"Sachsen",ort:"Dresden",topic:"#Radweg",sources:2,img:"p1",relevance:84,reason:"Lokal relevant, klarer Nutzwert."},
+  {id:3,title:"Hersteller zeigt neues Cargo-E-Bike",land:"Bundesweit",ort:"Bundesweit",topic:"#Handel",sources:1,img:"p2",relevance:74,reason:"Produktnews, mittlere Relevanz — Einordnung nötig."},
+  {id:4,title:"Radrennen am Wochenende in Nürnberg",land:"Bayern",ort:"Nürnberg",topic:"#Event",sources:2,img:"p3",relevance:69,reason:"Regionales Event."},
+  {id:5,title:"Verkehrsforscher im Interview zur Mobilitätswende",land:"Bundesweit",ort:"Bundesweit",topic:"#Politik",sources:1,img:"p7",relevance:61,reason:"Hintergrund, eine Quelle — prüfen."},
+  {id:6,title:"Fahrradladen eröffnet zweite Filiale",land:"Baden-Württ.",ort:"Stuttgart",topic:"#Handel",sources:1,img:"p6",relevance:38,reason:"Geringe Relevanz: lokale Geschäftsmeldung, PR-nah."},
+  {id:7,title:"Hersteller verlost E-Bike zum Jubiläum",land:"Bundesweit",ort:"Bundesweit",topic:"#Handel",sources:1,img:"p2",relevance:29,reason:"Wahrscheinlich PR/Gewinnspiel — vermutlich verwerfen."}
+];
+function relClass(r){ return r>=75?'hi':(r>=50?'mid':'lo'); }
+function renderInboxCount(){ document.getElementById('inbox-n').textContent=INBOX.length; }
+function openSichtung(){ renderSichtung(); document.getElementById('sicht-scrim').classList.add('on'); document.getElementById('sicht').classList.add('on'); }
+function closeSichtung(){ document.getElementById('sicht-scrim').classList.remove('on'); document.getElementById('sicht').classList.remove('on'); }
+function renderSichtung(){
+  const box=document.getElementById('sicht-list');
+  if(!INBOX.length){ box.innerHTML='<div style="text-align:center;color:var(--dim);padding:44px 0;font-size:14px">Alles gesichtet. Der Eingang ist leer.</div>'; return; }
+  const items=[...INBOX].sort((a,b)=>b.relevance-a.relevance);
+  box.innerHTML=items.map(it=>`<div class="srow">
+      <div class="srel ${relClass(it.relevance)}">${it.relevance}</div>
+      <div class="smeta"><b>${it.title}</b><div class="mm">${it.ort} · ${it.sources} Quellen · ${it.topic}</div><div class="rr">${it.reason}</div></div>
+      <div class="sbtns"><button class="s-ok" onclick="approveInbox(${it.id})">Übernehmen</button><button class="s-no" onclick="rejectInbox(${it.id})">Verwerfen</button></div>
+    </div>`).join('');
+}
+function approveInbox(id){
+  const i=INBOX.findIndex(x=>x.id===id); if(i<0) return;
+  const it=INBOX.splice(i,1)[0];
+  STORIES.unshift({ id:900+id, title:it.title, land:it.land, ort:it.ort, topic:it.topic, sources:it.sources, time:'gerade übernommen', sort:2002, img:it.img, neu:true, url:it.url||'' });
+  document.getElementById('live-count').textContent=STORIES.length;
+  renderInboxCount(); renderSichtung(); renderGrid(); toast('In den Newsroom übernommen');
+}
+function rejectInbox(id){ const i=INBOX.findIndex(x=>x.id===id); if(i<0) return; INBOX.splice(i,1); renderInboxCount(); renderSichtung(); toast('Verworfen'); }
+function approveAll(){ [...INBOX].filter(x=>x.relevance>=50).forEach(x=>approveInbox(x.id)); toast('Alle relevanten übernommen'); }
+const FILTERS = ["Für dich","✦ Vorschläge","Bundesweit","Bayern","Sachsen","Baden-Württ.","#Politik","#Handel","#Radweg","#Event"];
+let activeFilter = "Für dich";
+const stack = [];
+const stackOwner = {};      // id -> Redakteur-Kürzel
+const reassignedNew = new Set();  // Story-IDs, die einem Kollegen frisch übergeben wurden
+let published = [];         // serverseitige Historie (für alle sichtbar)
+const publishedKeys = new Set();  // url:/id: der veröffentlichten Meldungen -> dauerhaft aus dem Grid
+function isPublished(s){ return publishedKeys.has('id:'+s.id) || (s.url && publishedKeys.has('url:'+s.url)); }
+const draftKeys = new Set();       // url:/id: der als Entwurf gespeicherten Meldungen -> raus aus dem Grid
+function isDraft(s){ return draftKeys.has('id:'+s.id) || (s.url && draftKeys.has('url:'+s.url)); }
+const EDITORS = ['LO','AH','ZC','RS','JS'];
+let currentEditor = null;
+
+/* ---------- Redakteur-Kürzel ---------- */
+function initEditor(){
+  let e=null; try{ e=localStorage.getItem('nr-editor'); }catch(x){}
+  if(e){ currentEditor=e; paintEditor(); } else { document.getElementById('editor-overlay').classList.add('on'); }
+}
+function paintEditor(){ const c=document.getElementById('editorchip'); if(c) c.textContent=currentEditor||'?'; }
+function setEditor(e){ currentEditor=e; try{ localStorage.setItem('nr-editor',e); }catch(x){}
+  document.getElementById('editor-overlay').classList.remove('on');
+  document.getElementById('editormenu').classList.remove('on');
+  paintEditor(); renderGrid(); renderStack(); toast('Angemeldet als '+e); }
+function toggleEditorMenu(ev){ ev.stopPropagation(); const m=document.getElementById('editormenu');
+  m.innerHTML=EDITORS.map(e=>`<div class="em ${e===currentEditor?'on':''}" onclick="setEditor('${e}')"><span class="ini">${e}</span>Redakteur ${e}</div>`).join('');
+  m.classList.toggle('on'); }
+document.addEventListener('click',()=>{ const m=document.getElementById('editormenu'); if(m) m.classList.remove('on'); const r=document.getElementById('reassign-menu'); if(r) r.classList.remove('on'); });
+
+/* ---------- Eigenes Thema ---------- */
+const OWN_REGIONS = ['Bundesweit','Baden-Württ.','Bayern','Berlin','Brandenburg','Bremen','Hamburg','Hessen','Meckl.-Vorp.','Niedersachsen','Nordrhein-Westf.','Rheinland-Pfalz','Saarland','Sachsen','Sachsen-Anhalt','Schleswig-H.','Thüringen'];
+function openOwn(){
+  const sel=document.getElementById('own-region');
+  sel.innerHTML=OWN_REGIONS.map(r=>`<option>${r}</option>`).join('');
+  document.getElementById('own-title').value=''; document.getElementById('own-topic').value=''; document.getElementById('own-note').value=''; document.getElementById('own-url').value='';
+  document.getElementById('own-overlay').classList.add('on');
+}
+function closeOwn(){ document.getElementById('own-overlay').classList.remove('on'); }
+function addOwnStory(){
+  const t=document.getElementById('own-title').value.trim();
+  if(!t){ toast('Bitte einen Titel eingeben',true); return; }
+  const land=document.getElementById('own-region').value;
+  let kw=document.getElementById('own-topic').value.trim()||'WE-RIDE';
+  if(!kw.startsWith('#')) kw='#'+kw;
+  const note=document.getElementById('own-note').value.trim();
+  const url=document.getElementById('own-url').value.trim();
+  const id=700000+Math.floor(Math.random()*100000);
+  STORIES.unshift({ id, title:t, land, ort:land, topic:kw, sources:url?1:0, time:'gerade angelegt', sort:2003, img:'p1', neu:true, eigen:true, reason:note, url });
+  document.getElementById('live-count').textContent=STORIES.length;
+  closeOwn(); renderGrid(); toast(url?'Eigenes Thema mit Quelle ins Grid gelegt':'Eigenes Thema ins Grid gelegt');
+}
+
+/* ---------- Historie ---------- */
+function rebuildPublishedKeys(){ publishedKeys.clear(); published.forEach(p=>{ if(p.url) publishedKeys.add('url:'+p.url); if(p.storyId!=null) publishedKeys.add('id:'+p.storyId); }); }
+async function loadPublished(){
+  try{ const r=await fetch('/api/published'); if(!r.ok) return; const d=await r.json(); published=(d&&d.items)?d.items:[]; rebuildPublishedKeys(); const el=document.getElementById('pub-n'); if(el) el.textContent=published.length; renderGrid(); }
+  catch(e){ /* offline */ }
+}
+function openPublished(){ loadPublished().then(renderPublished); document.getElementById('pub-overlay').classList.add('on'); }
+function closePublished(){ document.getElementById('pub-overlay').classList.remove('on'); }
+function dayLabel(iso){ const d=new Date(iso); const now=new Date(); const t=new Date(now.getFullYear(),now.getMonth(),now.getDate()); const dd=new Date(d.getFullYear(),d.getMonth(),d.getDate()); const diff=Math.round((t-dd)/864e5); if(diff===0) return 'Heute'; if(diff===1) return 'Gestern'; return d.toLocaleDateString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric'}); }
+function hhmm(iso){ try{ return new Date(iso).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
+function renderPublished(){
+  const box=document.getElementById('pub-list');
+  if(!published.length){ box.innerHTML='<div style="text-align:center;color:var(--dim);padding:40px 0;font-size:14px">Noch nichts veröffentlicht.</div>'; return; }
+  const items=[...published].sort((a,b)=>new Date(b.when||0)-new Date(a.when||0));
+  const groups={}; const order=[];
+  items.forEach(p=>{ const k=dayLabel(p.when||new Date().toISOString()); if(!groups[k]){ groups[k]=[]; order.push(k); } groups[k].push(p); });
+  box.innerHTML=order.map(k=>`<div class="pub-group"><div class="pub-daylabel">${k} <span>${groups[k].length}</span></div>`+groups[k].map(p=>`<div class="pubrow"><div class="pini">${p.editor||'?'}</div><div class="pm"><b>${p.title||''}</b><span>${p.ort||''} · ${hhmm(p.when)}${p.variant?(' · Fassung '+p.variant):''}</span></div><button class="pdl" onclick="openPublishedItem('${p.pubId}')">Öffnen</button></div>`).join('')+`</div>`).join('');
+}
+function openPublishedItem(pubId){
+  const p=published.find(x=>x.pubId===pubId); if(!p) return;
+  closePublished();
+  M={ list:[p.storyId!=null?p.storyId:('pub-'+pubId)], idx:0, pubId:p.pubId };
+  M.story = STORIES.find(x=>x.id===p.storyId) || { id:(p.storyId!=null?p.storyId:('pub-'+pubId)), title:p.title, ort:p.ort||'—', land:p.land||p.ort||'—', topic:p.topic||'', url:p.url||'', sources:1, img:'p1' };
+  if(p.url && !M.story.url) M.story.url=p.url;
+  M.researching=false; M.researched=true; M.research=p.research||{angles:[],offen:'—',sources:[],facts:[]};
+  M.generating=false; M.drafted=true; M.article=p.article||{A:{title:p.title,teaser:'',body:[''],takeaways:['','','']},B:{title:p.title,teaser:'',body:[''],takeaways:['','','']}}; M.variant=p.variant||'A'; M.laenge=p.laenge||'News';
+  M.kiraAnswer=null; M.kiraAsking=false;
+  renderMaske(); showMaske();
+  toast('Veröffentlichte Meldung geöffnet — von '+(p.editor||'?'));
+}
+
+document.getElementById('live-count').textContent = STORIES.length;
+
+function renderFilters(){
+  document.getElementById('filters').innerHTML = FILTERS.map(f =>
+    `<button class="chip ${f===activeFilter?'on':''}" onclick="setFilter('${f}')">${f}</button>`).join('');
+}
+function setFilter(f){ activeFilter=f; renderFilters(); renderGrid(); }
+function matches(s){
+  if(activeFilter==="Für dich") return true;
+  if(activeFilter==="✦ Vorschläge") return !!s.kira;
+  if(activeFilter.startsWith("#")) return s.topic===activeFilter;
+  return s.land===activeFilter;
+}
+function visibleStories(){ return STORIES.filter(s => !stack.includes(s.id) && !isPublished(s) && !isDraft(s) && matches(s)).sort((a,b)=>(b.sort||0)-(a.sort||0)); }
+
+function renderGrid(){
+  const vis = visibleStories();
+  const grid = document.getElementById('grid');
+  const kiraCount = STORIES.filter(s=>s.kira && !stack.includes(s.id)).length;
+  const banner = (kiraCount && activeFilter!=='✦ Vorschläge')
+    ? `<div class="kbanner" onclick="setFilter('✦ Vorschläge')"><span style="display:inline-flex;align-items:center;gap:7px"><svg class="kira-ic" viewBox="0 0 100 100"><use href="#kira-mark"/></svg><b>KIRA</b> hat ${kiraCount} Themen für euch entdeckt</span><span class="lnk">anzeigen →</span></div>` : '';
+  if(!vis.length){ grid.innerHTML = banner + `<div class="empty">Keine offenen Meldungen in dieser Ansicht.<br>Wechsle den Filter oder öffne deinen Stack.</div>`; return; }
+  grid.innerHTML = banner + vis.map((s,i)=>{
+    const hero = i===0 ? ' hero' : '';
+    const tag = `<span class="rtag">${s.ort}</span>`;
+    const mark = s.eigen ? '<span class="new" style="background:var(--ink)">Eigenes Thema</span>' : (s.kira ? '<span class="new kbadge">KIRA-Vorschlag</span>' : (s.vortag ? '<span class="vortag">Vortag</span>' : (s.neu?'<span class="new">Neu</span>':'')));
+    return `<div class="card${hero}${s.vortag?' isvortag':''}" onclick="openDetail(${s.id})">
+      <div class="img ${s.img}"></div><div class="shade"></div>
+      ${tag}
+      <button class="add" title="Auf den Stack" onclick="addToStack(${s.id},event)">＋</button>
+      <div class="cap"><h3>${s.title}</h3><div class="meta">${mark}${s.agehint?'<span class="agehint">'+s.agehint+'</span>':''}${s.sources} Quellen · ${s.time} · ${s.topic}</div></div>
+    </div>`;
+  }).join('');
+}
+function openFind(){ document.getElementById('find-q').value=''; document.getElementById('find-overlay').classList.add('on'); setTimeout(()=>{ const i=document.getElementById('find-q'); if(i) i.focus(); },60); }
+function closeFind(){ document.getElementById('find-overlay').classList.remove('on'); }
+function setFindQ(v){ const i=document.getElementById('find-q'); i.value=v; runFind(); }
+async function runFind(){
+  const q=document.getElementById('find-q').value.trim();
+  const btn=document.getElementById('find-go'); btn.disabled=true; const old=btn.textContent; btn.textContent='KIRA durchsucht das Netz …';
+  try{
+    const r=await fetch('/api/discover'+(q?('?q='+encodeURIComponent(q)):'')); const d=r.ok?await r.json():{items:[]};
+    const items=(d.items||[]).filter(t=>t.url);
+    if(!items.length){ toast('KIRA hat nichts gefunden — das ist auch okay.'); btn.disabled=false; btn.textContent=old; return; }
+    const present=new Set(STORIES.map(s=>s.url).filter(Boolean));
+    const next=items.filter(t=>!present.has(t.url)).slice(0, q?8:3);
+    if(!next.length){ toast('Diese Treffer liegen schon im Grid.'); btn.disabled=false; btn.textContent=old; return; }
+    let nid=140000+Math.floor(Math.random()*10000);
+    next.forEach(t=>{ STORIES.unshift({ id:nid++, title:t.title, land:t.land||'Bundesweit', ort:t.ort||'Bundesweit', topic:t.topic||'#Radverkehr', sources:t.sources||1, time:'von KIRA gefunden', sort:2001, img:'p'+((nid%8)+1), neu:true, kira:true, reason:t.reason||'', url:t.url }); });
+    document.getElementById('live-count').textContent=STORIES.length;
+    closeFind(); setFilter('✦ Vorschläge');
+    const modeTxt = d.mode==='web' ? 'im Netz' : (d.mode==='ingest' ? 'aus dem Ingest (Fallback)' : '');
+    toast(`✦ KIRA hat ${next.length} Themen ${modeTxt} gefunden`);
+  }catch(e){ toast('Suche fehlgeschlagen — läuft der Server?',true); }
+  btn.disabled=false; btn.textContent=old;
+}
+
+function myStack(){ return stack.filter(id => stackOwner[id] === currentEditor); }
+function addToStack(id,e){
+  if(e) e.stopPropagation();
+  if(!currentEditor){ document.getElementById('editor-overlay').classList.add('on'); return; }
+  if(stack.includes(id)) return;
+  stack.push(id); stackOwner[id]=currentEditor;
+  renderGrid(); renderStack();
+  const s = STORIES.find(x=>x.id===id);
+  toast(`„${short(s.title)}" auf deinen Stack`);
+}
+function removeFromStack(id){ const i=stack.indexOf(id); if(i>-1)stack.splice(i,1); delete stackOwner[id]; renderGrid(); renderStack(); }
+
+function renderStack(){
+  const mine = myStack();
+  document.getElementById('stack-n').textContent = mine.length;
+  document.getElementById('stack-sub').textContent = (currentEditor?currentEditor+' · ':'') + (mine.length ? `${mine.length} Meldung${mine.length>1?'en':''} · deine Schicht heute` : 'deine Schicht heute');
+  const box = document.getElementById('ditems');
+  if(!mine.length){ box.innerHTML = `<div class="dempty">Noch nichts auf deinem Stack.<br>Klick im Grid auf ＋ bei den Meldungen, die du heute machen willst.</div>`; }
+  else {
+    box.innerHTML = mine.map(id=>{ const s=STORIES.find(x=>x.id===id); return `
+      <div class="ditem"><div class="th ${s.img}"></div>
+        <div class="m"><b>${reassignedNew.has(id)?'<span class="newpill">neu</span> ':''}${s.title}</b><span>${s.ort} · ${s.sources} Quellen · ${s.topic}</span></div>
+        <button class="rm" title="Zurück ins Grid" onclick="removeFromStack(${s.id})">✕</button></div>`; }).join('');
+  }
+  const btn=document.getElementById('process'); btn.disabled=!mine.length;
+  document.getElementById('process-sub').textContent = mine.length ? `${mine.length} Meldung${mine.length>1?'en':''} nacheinander durcharbeiten` : 'Stack ist leer';
+}
+
+function toggleDrawer(open){ document.getElementById('drawer').classList.toggle('on',open); document.getElementById('scrim').classList.toggle('on',open); }
+function processStack(){ if(!myStack().length){ toast('Dein Stack ist leer'); return; } toggleDrawer(false); openMaskeStack(); }
+function openKira(id,e){ e.stopPropagation(); openMaske(id,{autoKira:true}); }
+
+/* ---- Detail-Ansicht ---- */
+let detailId=null;
+const SRC_POOL=["dpa","Lokalzeitung","Fachmagazin Velo","Pressestelle Stadt","ADFC","Regionalportal"];
+function openDetail(id){ detailId=id; renderDetail(); document.getElementById('mscrim').classList.add('on'); document.getElementById('mcard').classList.add('on'); }
+function closeDetail(){ document.getElementById('mscrim').classList.remove('on'); document.getElementById('mcard').classList.remove('on'); detailId=null; }
+function renderDetail(){
+  const s=STORIES.find(x=>x.id===detailId); if(!s) return;
+  document.getElementById('m-img').className='mimg '+s.img;
+  document.getElementById('m-tag').textContent=s.ort;
+  document.getElementById('m-title').textContent=s.title;
+  document.getElementById('m-meta').innerHTML=`${s.neu?'<span class="new">Neu</span>':''}${s.land} · ${s.sources} Quellen · ${s.time} · ${s.topic}`;
+  const reasonBox = s.kira ? `<div class="kreason"><b>✦ Warum KIRA das vorschlägt</b><br>${s.reason||''}</div>` : '';
+  document.getElementById('m-anriss').innerHTML = reasonBox + `Der Newsroom hat ${s.sources} Meldung${s.sources>1?'en':''} zu diesem Thema zusammengeführt und die Kernfakten extrahiert. Schau rein, starte KIRA für Recherche und Faktencheck — oder leg die Meldung auf den Stack.`;
+  let src='';
+  if(s.url){ src=`<div class="msrc"><span class="mn">[1]</span><a href="${s.url}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:none">${s.url.replace(/^https?:\/\/(www\.)?/,'').slice(0,52)} ↗</a></div>`; }
+  else { for(let i=0;i<s.sources;i++){ src+=`<div class="msrc"><span class="mn">[${i+1}]</span>${SRC_POOL[i%SRC_POOL.length]}</div>`; } }
+  document.getElementById('m-sources').innerHTML=src;
+  const on=stack.includes(s.id);
+  const b=document.getElementById('m-stackbtn'); b.textContent = on ? '✓ Auf dem Stack — entfernen' : '＋ Auf den Stack'; b.className='mstack'+(on?' on':'');
+}
+function toggleStackDetail(){ const id=detailId;
+  if(!currentEditor){ document.getElementById('editor-overlay').classList.add('on'); return; }
+  if(stack.includes(id)){
+    if(stackOwner[id]===currentEditor){ removeFromStack(id); }
+    else { toast('Bereits von '+stackOwner[id]+' übernommen'); return; }
+  } else { stack.push(id); stackOwner[id]=currentEditor; renderGrid(); renderStack(); }
+  renderDetail(); }
+function detailKira(){ const id=detailId; closeDetail(); openMaske(id,{autoKira:true}); }
+function detailMask(){ const id=detailId; closeDetail(); openMaske(id); }
+
+function short(t){ return t.length>34 ? t.slice(0,34)+'…' : t; }
+let tt;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('on'); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('on'),2400); }
+
+/* ===================== ARBEITSMASKE ===================== */
+let M = null;
+function openMaske(id,opts){ M={ list:[id], idx:0 }; loadCurrent(); showMaske(); if(opts&&opts.autoKira) kiraResearch(); }
+function openMaskeStack(){ const mine=myStack(); if(!mine.length){ toast('Dein Stack ist leer'); return; } M={ list:[...mine], idx:0 }; loadCurrent(); showMaske(); }
+function showMaske(){ document.getElementById('maske').classList.add('on'); document.body.style.overflow='hidden'; }
+function closeMaske(){ document.getElementById('maske').classList.remove('on'); document.body.style.overflow=''; M=null; }
+function discardCurrent(){ if(!M||!M.story){ closeMaske(); return; } const id=M.story.id; const i=stack.indexOf(id); if(i>-1){ stack.splice(i,1); delete stackOwner[id]; } reassignedNew.delete(id); renderStack(); renderGrid(); toast('Verworfen — zurück ins Grid'); nextStory(); }
+function reassignMenu(ev){ ev.stopPropagation(); const m=document.getElementById('reassign-menu'); const others=EDITORS.filter(e=>e!==currentEditor);
+  m.innerHTML=`<div style="padding:7px 12px 4px;font-size:11px;color:var(--dim);font-weight:700">An Redakteur:in übergeben</div>`+others.map(e=>`<div class="em" onclick="reassignTo('${e}')"><span class="ini">${e}</span>Redakteur ${e}</div>`).join('');
+  m.style.position='fixed'; m.style.top=(ev.clientY+18)+'px'; m.style.left=Math.min(ev.clientX-40, window.innerWidth-230)+'px'; m.style.right='auto'; m.style.zIndex='90'; m.classList.add('on'); }
+function reassignTo(e){ if(!M||!M.story) return; const id=M.story.id; if(!stack.includes(id)) stack.push(id); stackOwner[id]=e; reassignedNew.add(id); renderStack(); renderGrid(); closeMaske(); toast('An '+e+' übergeben — erscheint dort mit „neu"'); }
+function loadCurrent(){ const id=M.list[M.idx]; M.story=STORIES.find(x=>x.id===id); if(reassignedNew.has(id)){ reassignedNew.delete(id); renderStack(); } M.researching=false; M.researched=false; M.research=null; M.generating=false; M.drafted=false; M.article=null; M.angle=null; M.variant='A'; M.laenge='News'; M.kiraAnswer=null; M.kiraAsking=false; renderMaske(); }
+function setLaenge(l){ M.laenge=l; renderMaske(); }
+function startBlank(){ M.drafted=true; const blank={title:'',teaser:'',body:[''],takeaways:['','',''],words:0,seo:'',slug:''}; M.article={A:JSON.parse(JSON.stringify(blank)),B:JSON.parse(JSON.stringify(blank))}; renderMaske(); toast('Leerer Entwurf — schreib los, KIRA hilft rechts'); }
+function copyTakeaways(){ const items=[...document.querySelectorAll('#mk-take-list li')].map(li=>'• '+li.textContent.trim()).filter(x=>x.length>2); navigator.clipboard.writeText(items.join('\n')).then(()=>toast('3 Takeaways kopiert')); }
+function copyField(kind){
+  let text='', label='';
+  if(kind==='titel'){ const h=document.querySelector('.mk-art h1'); text=h?h.innerText.trim():''; label='Überschrift kopiert'; }
+  else if(kind==='teaser'){ const t=document.querySelector('.mk-art .teaser'); text=t?t.innerText.trim():''; label='Teaser kopiert'; }
+  else { const ps=[...document.querySelectorAll('.mk-art p')].filter(p=>!p.classList.contains('teaser')); text=ps.map(p=>p.innerText.trim()).filter(Boolean).join('\n\n'); label='Text kopiert'; }
+  if(!text){ toast('Nichts zu kopieren'); return; }
+  navigator.clipboard.writeText(text).then(()=>toast(label));
+}
+function nextStory(){ if(M.idx < M.list.length-1){ M.idx++; loadCurrent(); } else { toast('Alle Meldungen im Stack abgearbeitet ✓'); closeMaske(); } }
+
+function kiraResearch(){
+  if(M.researched||M.researching) return; M.researching=true; renderMaske();
+  fetch('/api/research',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:M.story.title,url:M.story.url||'',editor:currentEditor||''})})
+    .then(r=>r.ok?r.json():Promise.reject()).then(d=>{
+      if(d.error) throw new Error(d.error);
+      M.researching=false; M.researched=true;
+      M.research={
+        sources:(d.sources||[]).map((s,idx)=>({nm:s.nm,cr:s.cr||'Quelle',c:s.cr==='Mittel'?'m':'p',url:s.url||(idx===0?(M.story.url||''):''),hinweis:s.hinweis||''})),
+        facts:(d.facts||[]).map(f=>({b:f.status==='gedeckt'?'belegt':(f.status==='widerspruch'?'Widerspruch':'prüfen'),c:f.status==='gedeckt'?'ok':(f.status==='widerspruch'?'bad':'pr'),t:f.t,src:f.src||''})),
+        angles:(d.angles&&d.angles.length)?d.angles:['Branchen-Einordnung','Lokaler Nutzwert','Hintergrund & Zahlen'],
+        offen:d.offen||'—'
+      };
+      if(!M.research.sources.length && M.story.url){ M.research.sources=[{nm:domain(M.story.url),cr:'Primär',c:'p',url:M.story.url,hinweis:'Quell-Link der Meldung'}]; }
+      renderMaske();
+    }).catch(()=>{ M.researching=false; M.researched=true; M.research=getResearch(M.story); renderMaske(); toast('Offline-Modus: Beispiel-Recherche'); });
+}
+function selectAngle(name){ M.angle=name; renderMaske(); }
+function generateDraft(){
+  if(M.generating) return; M.generating=true; renderMaske();
+  const s=M.story;
+  fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:s.title,url:s.url||'',ort:s.ort,topic:s.topic,modus:M.laenge,angle:M.angle,notes:s.reason||'',editor:currentEditor||''})})
+    .then(async r=>{ const d=await r.json().catch(()=>({error:'Serverfehler'})); if(!r.ok||d.error) throw new Error(d.error||('HTTP '+r.status)); return d; }).then(d=>{
+      M.generating=false; M.drafted=true;
+      const mk=v=>({ title:v.titel||'', teaser:v.teaser||'', body:v.body||[''], takeaways:v.takeaways||['','',''], words:(v.body||[]).join(' ').split(/\s+/).filter(Boolean).length, seo:(d.seo&&d.seo.title)||'', slug:(d.seo&&d.seo.slug)||'' });
+      M.article={ A:mk(d.variante_a||{}), B:mk(d.variante_b||{}) };
+      M.researched=true; M.research=M.research||{angles:[],offen:'—',sources:[],facts:[]};
+      if(d.quellen&&d.quellen.length) M.research.sources=d.quellen.map(q=>({nm:q.titel||q.url||'Quelle',cr:'Quelle',c:'p',url:q.url||''}));
+      if((!M.research.sources||!M.research.sources.length) && s.url) M.research.sources=[{nm:s.url.replace(/^https?:\/\/(www\.)?/,'').slice(0,46),cr:'Primär',c:'p',url:s.url}];
+      if(d.faktencheck&&d.faktencheck.length) M.research.facts=d.faktencheck.map(f=>({b:f.status==='gedeckt'?'belegt':(f.status==='widerspruch'?'Widerspruch':'prüfen'),c:f.status==='gedeckt'?'ok':(f.status==='widerspruch'?'bad':'pr'),t:f.aussage,src:f.beleg||''}));
+      if(d.offene_fragen&&d.offene_fragen.filter(Boolean).length) M.research.offen=d.offene_fragen.filter(Boolean).join(' · ');
+      renderMaske();
+      if(d._meta){ const c=d._meta; toast('Entwurf fertig · '+(c.input+c.output).toLocaleString('de-DE')+' Tokens · ca. '+(c.costUsd*100).toFixed(1)+' ct (Session: '+(c.sessionCostUsd*100).toFixed(0)+' ct)'); }
+    }).catch(err=>{ M.generating=false; M.drafted=true; M.article=getArticle(M.story,M.angle,M.laenge); renderMaske(); toast('Generierung fehlgeschlagen: '+(err.message||'')+' — Beispiel-Entwurf',true); });
+}
+function captureEdits(){
+  if(!M.drafted) return; const v=M.article[M.variant]; if(!v) return;
+  const h=document.querySelector('.mk-art h1'); const t=document.querySelector('.mk-art .teaser');
+  const ps=[...document.querySelectorAll('.mk-art p')]; const lis=[...document.querySelectorAll('#mk-take-list li')];
+  if(h) v.title=h.textContent; if(t) v.teaser=t.textContent;
+  if(ps.length) v.body=ps.map(p=>p.textContent); if(lis.length) v.takeaways=lis.map(l=>l.textContent);
+}
+function setVariant(v){ captureEdits(); M.variant=v; renderMaske(); }
+function mkTool(t){ toast(t+' — Beispiel-Aktion'); }
+function srcUrl(){ if(M&&M.story&&M.story.url) return M.story.url; if(M&&M.research&&M.research.sources){ const q=M.research.sources.find(s=>/^https?:\/\//.test(s.nm||'')); if(q) return q.nm; } return ''; }
+function clarlink(){
+  const u=srcUrl();
+  if(!u) return '<div class="mk-srclink"><span class="mk-kl" style="margin:0 0 6px">Quelle</span><div style="font-size:12px;color:var(--dim);line-height:1.5">Für diese Kachel ist kein Quell-Link hinterlegt (Demo- oder eigenes Thema). Meldungen aus der Sichtung bringen den Link automatisch mit.</div></div>';
+  return `<div class="mk-srclink"><span class="mk-kl" style="margin:0 0 6px">Quelle — Klarlink für den WordPress-Button</span><div class="mk-srcrow"><input class="mk-srcinput" readonly value="${u.replace(/"/g,'&quot;')}" onclick="this.select()"><button class="mk-copylink" onclick="copyLink()">Kopieren</button></div><a class="mk-srcopen" href="${u}" target="_blank" rel="noopener">Im Tab öffnen ↗</a></div>`;
+}
+function copyLink(){ const u=srcUrl(); if(u){ navigator.clipboard.writeText(u).then(()=>toast('Quell-Link kopiert')); } }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function domain(u){ try{ return u.replace(/^https?:\/\/(www\.)?/,'').split('/')[0]; }catch(e){ return u; } }
+function askKira(q){
+  q=(q||'').trim(); if(!q||!M) return;
+  M.kiraAsking=true; M.kiraAnswer=null; renderMaske();
+  fetch('/api/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:M.story.title,url:M.story.url||'',question:q,editor:currentEditor||''})})
+    .then(r=>r.ok?r.json():Promise.reject()).then(d=>{ if(d.error) throw new Error(d.error); M.kiraAsking=false; M.kiraAnswer={q,a:d.answer||'—'}; renderMaske(); })
+    .catch(()=>{ M.kiraAsking=false; M.kiraAnswer={q,a:'KIRA ist gerade nicht erreichbar. Läuft der Server?'}; renderMaske(); });
+}
+function mkExport(){
+  if(!M || !M.story || !M.article){ toast('Noch kein Entwurf zum Übergeben'); return; }
+  captureEdits();
+  const s=M.story; const v=M.article[M.variant]||{};
+  const payload={ pubId:M.pubId||('p'+Date.now()), storyId:s.id, title:(v.title||s.title), ort:s.ort, land:s.land||s.ort, topic:s.topic, url:s.url||srcUrl()||'', editor:currentEditor||'?', variant:M.variant, laenge:M.laenge, article:M.article, research:M.research||null };
+  // sofort und dauerhaft aus dem Grid nehmen
+  if(payload.url) publishedKeys.add('url:'+payload.url);
+  publishedKeys.add('id:'+s.id);
+  const i=stack.indexOf(s.id); if(i>-1){ stack.splice(i,1); delete stackOwner[s.id]; }
+  renderStack(); renderGrid();
+  // Entwurf (falls vorhanden) auflösen
+  if(M.draftId){ fetch('/api/drafts/'+M.draftId,{method:'DELETE'}).then(()=>loadDrafts()).catch(()=>{}); M.draftId=null; }
+  fetch('/api/published',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(r=>r.ok?r.json():Promise.reject()).then(async d=>{ M.pubId=d.pubId; await loadPublished(); toast('An WordPress übergeben — in der Historie gespeichert'); })
+    .catch(()=>toast('Übergabe lokal übernommen, aber Server nicht erreicht',true));
+  nextStory();
+}
+/* ---------- Entwürfe (geteilt, serverseitig) ---------- */
+let DRAFTS = [];
+function refreshDraftCount(){ const el=document.getElementById('draft-n'); if(el) el.textContent=DRAFTS.length; }
+function rebuildDraftKeys(){ draftKeys.clear(); DRAFTS.forEach(dr=>{ if(dr.url) draftKeys.add('url:'+dr.url); if(dr.storyId!=null) draftKeys.add('id:'+dr.storyId); }); }
+async function loadDrafts(){
+  try{ const r=await fetch('/api/drafts'); if(!r.ok) return; const d=await r.json(); DRAFTS=(d&&d.items)?d.items:[]; rebuildDraftKeys(); refreshDraftCount(); renderGrid(); }
+  catch(e){ /* offline */ }
+}
+function mkSave(){
+  if(!M||!M.article){ toast('Noch kein Entwurf zum Speichern'); return; }
+  captureEdits();
+  const s=M.story; const v=M.article[M.variant]||{};
+  const payload={ draftId:M.draftId||('d'+Date.now()), storyId:s.id, title:(v.title||s.title), ort:s.ort, topic:s.topic, url:s.url||srcUrl()||'', editor:currentEditor||'?', variant:M.variant, laenge:M.laenge, article:M.article, research:M.research||null };
+  fetch('/api/drafts',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(r=>r.ok?r.json():Promise.reject()).then(async d=>{ M.draftId=d.draftId; const sid=s.id; const i=stack.indexOf(sid); if(i>-1){ stack.splice(i,1); delete stackOwner[sid]; } if(payload.url) draftKeys.add('url:'+payload.url); draftKeys.add('id:'+sid); await loadDrafts(); renderStack(); toast('Entwurf gespeichert — liegt jetzt unter „Entwürfe"'); nextStory(); })
+    .catch(()=>toast('Speichern fehlgeschlagen — läuft der Server?',true));
+}
+function openDrafts(){ loadDrafts().then(renderDrafts); document.getElementById('draft-overlay').classList.add('on'); }
+function closeDrafts(){ document.getElementById('draft-overlay').classList.remove('on'); }
+function fmtWhen(iso){ try{ const d=new Date(iso); return d.toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
+function renderDrafts(){
+  const box=document.getElementById('draft-list');
+  if(!DRAFTS.length){ box.innerHTML='<div style="text-align:center;color:var(--dim);padding:40px 0;font-size:14px">Noch keine Entwürfe gespeichert.</div>'; return; }
+  box.innerHTML=DRAFTS.map(dr=>`<div class="pubrow"><div class="pini">${dr.editor||'?'}</div><div class="pm"><b>${dr.title||'(ohne Titel)'}</b><span>${dr.ort||''} · ${fmtWhen(dr.when)} · Fassung ${dr.variant||'A'}</span></div><div style="display:flex;gap:6px"><button class="pdl" onclick="openDraft('${dr.draftId}')">Öffnen</button><button class="pdl" onclick="deleteDraft('${dr.draftId}')" title="Löschen">✕</button></div></div>`).join('');
+}
+function deleteDraft(id){ fetch('/api/drafts/'+id,{method:'DELETE'}).then(r=>r.json()).then(async()=>{ await loadDrafts(); renderDrafts(); toast('Entwurf gelöscht'); }).catch(()=>toast('Löschen fehlgeschlagen',true)); }
+function openDraft(id){
+  const dr=DRAFTS.find(x=>x.draftId===id); if(!dr) return;
+  closeDrafts();
+  M={ list:[dr.storyId], idx:0, draftId:dr.draftId };
+  M.story = STORIES.find(x=>x.id===dr.storyId) || { id:dr.storyId, title:dr.title, ort:dr.ort||'—', land:dr.ort||'—', topic:dr.topic||'', url:dr.url||'', sources:1, img:'p1' };
+  if(dr.url && !M.story.url) M.story.url=dr.url;
+  M.researching=false; M.researched=true; M.research=dr.research||{angles:[],offen:'—',sources:[],facts:[]};
+  M.generating=false; M.drafted=true; M.article=dr.article; M.variant=dr.variant||'A'; M.laenge=dr.laenge||'News';
+  renderMaske(); showMaske();
+  toast('Entwurf geöffnet — von '+(dr.editor||'?'));
+}
+
+function renderMaske(){
+  const s=M.story;
+  const prog = M.list.length>1 ? `Story ${M.idx+1} / ${M.list.length} im Stack` : 'Einzelmeldung';
+  const nextBtn = M.list.length>1 ? `<button class="mk-next" onclick="nextStory()">Nächste →</button>` : '';
+  // LEFT
+  let left;
+  if(M.generating){ left = `<div class="mk-empty"><div class="mk-spin"></div><p>KIRA schreibt zwei Fassungen im WE-RIDE-Stil …</p></div>`; }
+  else if(M.drafted){
+    const v=M.article[M.variant];
+    left = `<div class="mk-tabs">
+        <button class="mk-tab ${M.variant==='A'?'on':''}" onclick="setVariant('A')">Fassung A</button>
+        <button class="mk-tab ${M.variant==='B'?'on':''}" onclick="setVariant('B')">Fassung B</button>
+        <span class="mk-wc">${v.words} Wörter · ${M.laenge} · editierbar</span></div>
+      <div class="mk-copyrow">
+        <button class="mk-copy" onclick="copyField('titel')">⧉ Überschrift</button>
+        <button class="mk-copy" onclick="copyField('teaser')">⧉ Teaser</button>
+        <button class="mk-copy" onclick="copyField('text')">⧉ Text</button>
+      </div>
+      <div class="mk-art">
+        <h1 contenteditable="true">${v.title||'Überschrift …'}</h1>
+        <p class="teaser" contenteditable="true">${v.teaser||'Teaser …'}</p>
+        ${(v.body.length?v.body:['']).map(p=>`<p contenteditable="true">${p||'Text …'}</p>`).join('')}
+      </div>
+      <div class="mk-take">
+        <div class="mk-take-h"><span>3 Takeaways — für die WordPress-Box</span><button class="mk-copy" onclick="copyTakeaways()">Kopieren</button></div>
+        <ol id="mk-take-list">${(v.takeaways||['','','']).map(t=>`<li contenteditable="true">${t||'Takeaway …'}</li>`).join('')}</ol>
+      </div>
+      <div style="margin-top:16px">${clarlink()}</div>
+      <div class="mk-tools"><span class="mk-tchip" onclick="generateDraft()">✦ Neu generieren</span></div>`;
+  } else {
+    const chosen = M.angle ? `<div class="mk-chosen">Blickwinkel: ${M.angle}</div>` : (M.researched?`<div class="mk-chosen" style="color:var(--dim);font-weight:600">Optional: rechts einen Blickwinkel wählen</div>`:'');
+    const hint = M.researched ? 'Wähle rechts einen Blickwinkel oder leg direkt los.' : 'Tipp: Lass rechts erst KIRA recherchieren — dann kennst du Quellen, Fakten und mögliche Blickwinkel.';
+    const lg=M.laenge||'News';
+    const modi=[['Kurz','250–300 W.'],['News','600–900 W.'],['Analyse','800–1.200 W.']];
+    const lenToggle = `<div style="display:flex;gap:7px;justify-content:center;margin-bottom:16px;flex-wrap:wrap">`
+      + modi.map(m=>`<button class="mk-ang ${lg===m[0]?'on':''}" onclick="setLaenge('${m[0]}')">${lg===m[0]?'✓ ':''}${m[0]} · ${m[1]}</button>`).join('') + `</div>`;
+    left = `<div class="mk-empty"><div class="o"><svg class="kira-mark-svg" viewBox="0 0 100 100"><use href="#kira-mark"/></svg></div><h2>Bereit für den Entwurf</h2><p>${hint}</p>${lenToggle}${chosen}
+      <button class="mk-cta" onclick="generateDraft()">✦ Entwurf erstellen</button>
+      <div style="margin-top:12px"><button class="mk-cta" style="background:#fff;border:1px solid var(--line);color:var(--ink)" onclick="startBlank()">Selbst schreiben</button></div></div>`;
+  }
+  // RIGHT (KIRA)
+  let right;
+  const linkBlock = clarlink();
+  const kh = `<div class="mk-kh"><div class="mk-orb"><svg class="kira-mark-svg" viewBox="0 0 100 100"><use href="#kira-mark"/></svg></div><div><b>KIRA</b><span>${M.researched?'hat recherchiert · prüft mit':'KI-Recherche-Assistentin'}</span></div></div>` + linkBlock;
+  if(M.researching){ right = kh + `<div class="mk-kwait"><div class="mk-spin"></div>KIRA liest die Quellen und prüft die Fakten …</div>`; }
+  else if(M.researched){
+    const r=M.research;
+    right = kh
+      + `<div class="mk-kl">Quellen — zum Überprüfen</div>` + (r.sources.length? r.sources.map(q=>{ const label=q.url?domain(q.url):esc(q.nm); const hint=q.hinweis||(q.url?esc(q.nm):''); return `<div class="mk-src"><span class="nm">${q.url?`<a href="${q.url}" target="_blank" rel="noopener">${label} ↗</a>`:label}${hint&&hint!==label?`<span class="hint">${esc(hint)}</span>`:''}</span><span class="cr cr-${q.c}">${q.cr}</span></div>`; }).join('') : '<div style="font-size:12px;color:var(--dim)">Keine verlinkte Quelle vorhanden — vor Freigabe unbedingt Primärquelle prüfen.</div>')
+      + `<div class="mk-kl">Faktencheck</div>` + r.facts.map(f=>`<div class="mk-fact"><span class="b b-${f.c}">${f.b}</span><p>${esc(f.t)} <span>· ${esc(f.src)}</span></p></div>`).join('')
+      + `<div class="mk-kl">Blickwinkel</div><div>` + r.angles.map(a=>`<span class="mk-ang ${M.angle===a?'on':''}" onclick="selectAngle('${a.replace(/'/g,"\\'")}')">${M.angle===a?'✓ ':''}${a}</span>`).join('') + `</div>`
+      + `<div class="mk-kl">Fehlt noch</div><div class="mk-fact"><span class="b b-bd">offen</span><p>${esc(r.offen)}</p></div>`
+      + `<div class="mk-kl">Frag KIRA</div>`
+      + (M.kiraAsking? `<div class="mk-kwait" style="padding:12px 0"><div class="mk-spin"></div>KIRA denkt nach …</div>` : '')
+      + (M.kiraAnswer? `<div class="mk-kanswer"><b>Frage:</b> ${esc(M.kiraAnswer.q)}<div class="a">${esc(M.kiraAnswer.a).replace(/\n/g,'<br>')}</div></div>` : '')
+      + `<div class="mk-kinput"><input id="mk-ask" placeholder="z. B. Wer hat das beschlossen?" onkeydown="if(event.key==='Enter'){askKira(this.value);this.value=''}"><span class="go" onclick="var i=document.getElementById('mk-ask');askKira(i.value);i.value=''">↑</span></div>`;
+  } else {
+    right = kh + `<div class="mk-kwait">Noch nicht recherchiert.<br>KIRA sammelt Quellen, prüft Fakten und schlägt Blickwinkel vor.</div><button class="mk-krun" onclick="kiraResearch()">✦ KIRA recherchieren</button>`;
+  }
+  // FOOT
+  const seo = M.drafted ? `<b style="color:var(--ink)">SEO-Titel:</b> ${M.article[M.variant].seo} &nbsp;·&nbsp; <b style="color:var(--ink)">Slug:</b> ${M.article[M.variant].slug}` : 'SEO-Felder erscheinen, sobald der Entwurf steht.';
+  const dis = M.drafted ? '' : 'disabled';
+  document.getElementById('maske').innerHTML = `
+    <div class="mk-bar">
+      <button class="mk-back" onclick="closeMaske()">‹ Zurück zum Feed</button>
+      <span class="mk-rtag">${s.ort}</span>
+      <span class="mk-ttl">${s.title}</span>
+      <span class="mk-prog"><button class="mk-reassign" onclick="reassignMenu(event)">An Kolleg:in ▾</button>${prog}${nextBtn}</span>
+    </div>
+    <div class="mk-body">
+      <div class="mk-left">${left}</div>
+      <div class="mk-right">${right}</div>
+    </div>
+    <div class="mk-foot">
+      <button class="mk-discard" onclick="discardCurrent()">Verwerfen</button>
+      <div class="mk-seo">${seo}</div>
+      <button class="mk-save" onclick="mkSave()" ${dis}>Als Entwurf speichern</button>
+      <button class="mk-exp" onclick="mkExport()" ${dis}>An WordPress übergeben →</button>
+    </div>`;
+}
+
+/* ---- Mock-Inhalte für KIRA & Entwurf ---- */
+function getResearch(s){
+  if(s.id===2){ return {
+    sources:[{nm:'Polizei München',cr:'Primär',c:'p'},{nm:'Süddeutsche Zeitung',cr:'Hoch',c:'p'},{nm:'muenchen.de',cr:'Mittel',c:'m'}],
+    facts:[{b:'belegt',c:'ok',t:'Fund in einer Halle in Milbertshofen',src:'Quelle 1'},{b:'belegt',c:'ok',t:'Zwei Tatverdächtige festgenommen',src:'Quelle 1'},{b:'prüfen',c:'pr',t:'Zahl „400" vs. „rund 380"',src:'Q1 ↔ Q3'}],
+    angles:['Organisierter Diebstahl','Prävention','Aufklärungsquote'],
+    offen:'Wert der sichergestellten Räder? Noch keine Quelle nennt eine Summe.'
+  }; }
+  const pool=['Primärquelle / Pressestelle','Überregionale Zeitung','Regionalportal','Fachmagazin'];
+  const n=Math.max(2,Math.min(3,s.sources));
+  const crs=['Primär','Hoch','Mittel']; const ccs=['p','p','m'];
+  const sources=[]; for(let i=0;i<n;i++) sources.push({nm:pool[i%pool.length],cr:crs[i%3],c:ccs[i%3]});
+  return { sources,
+    facts:[{b:'belegt',c:'ok',t:'Kernaussage der Meldung gedeckt',src:'Quelle 1'},{b:'belegt',c:'ok',t:'Zeit-/Ortsangabe bestätigt',src:'Quelle 2'},{b:'prüfen',c:'pr',t:'Eine Detailangabe schwankt',src:'Q1 ↔ Q3'}],
+    angles:['Branchen-Einordnung','Lokaler Nutzwert','Hintergrund & Zahlen'],
+    offen:'Eine konkrete Zahl oder Quelle fehlt noch — vor Freigabe prüfen.' };
+}
+function getArticle(s,angle,laenge){
+  const lang = laenge!=='Kurz';
+  const w = laenge==='Analyse'?1050:(laenge==='News'?760:285);
+  const ort=s.ort.toUpperCase();
+  const extra='Fachleute verweisen zudem auf die längerfristige Entwicklung: Wer die Zahlen der vergangenen Jahre danebenlegt, erkennt ein Muster, das über den Einzelfall hinausreicht — und das Hersteller, Handel und Kommunen gleichermaßen betrifft.';
+  if(s.id===2){
+    const aBody=['MÜNCHEN. In einer Lagerhalle in Milbertshofen hat die Münchner Polizei <mark>rund 400</mark> gestohlene Fahrräder sichergestellt. Zwei Tatverdächtige wurden festgenommen.','Der Fund wirkt wie ein Erfolg — und zeigt zugleich, wie organisiert Fahrraddiebstahl inzwischen abläuft. Um Gelegenheitstaten geht es dabei längst nicht mehr.','Ich frage mich, was das für Hersteller, Handel und Codierungs-Initiativen bedeutet, wenn ganze Lager voller Räder umgeschlagen werden.'];
+    if(lang) aBody.push(extra);
+    return {
+    A:{title:'Wenn 400 Räder wieder auftauchen: Was der Fund über Fahrraddiebstahl verrät',
+       teaser:'Auf den ersten Blick eine gute Nachricht. Bei genauerem Hinsehen eine Frage für die ganze Branche.',
+       body:aBody, words:w,
+       takeaways:['Rund 400 mutmaßlich gestohlene Räder in München sichergestellt','Zwei Tatverdächtige festgenommen','Der Fund deutet auf zunehmend organisierten Fahrraddiebstahl hin'],
+       seo:'400 Räder gefunden: Wie organisiert ist Raddiebstahl?', slug:'/raeder-fund-muenchen'},
+    B:{title:'400 gestohlene Räder in München sichergestellt — zwei Festnahmen',
+       teaser:'Es geht nicht nur um diesen einen Fund, sondern um ein Muster, das die Branche kennt.',
+       body:lang?['MÜNCHEN. Die Polizei hat in Milbertshofen rund 400 mutmaßlich gestohlene Fahrräder entdeckt und zwei Verdächtige festgenommen.','Für Betroffene ist das die Chance auf Rückgabe. Für die Branche ein Signal, wie groß der Schwarzmarkt inzwischen ist.','Bei genauerem Hinsehen stellt sich die Frage, wo Prävention ansetzen müsste — bei der Codierung, im Handel oder bei den Plattformen.',extra]:['MÜNCHEN. Die Polizei hat in Milbertshofen rund 400 mutmaßlich gestohlene Fahrräder entdeckt und zwei Verdächtige festgenommen.','Für Betroffene ist das die Chance auf Rückgabe. Für die Branche ein Signal, wie groß der Schwarzmarkt inzwischen ist.','Bei genauerem Hinsehen stellt sich die Frage, wo Prävention ansetzen müsste — bei der Codierung, im Handel oder bei den Plattformen.'], words:w,
+       takeaways:['400 mutmaßlich gestohlene Räder in München gefunden','Betroffene können auf Rückgabe hoffen','Prävention muss bei Codierung, Handel und Plattformen ansetzen'],
+       seo:'München: 400 gestohlene Räder sichergestellt', slug:'/muenchen-raddiebstahl-fund'}
+    };
+  }
+  const base=(lead)=>{ const b=[`${ort}. ${s.title}. Mehrere Quellen berichten übereinstimmend; der Newsroom hat die Kernfakten zusammengeführt.`, lead, 'Ich frage mich, was das für Hersteller, Handel und Kommunen bedeutet — und wo die eigentliche Weichenstellung liegt.']; if(lang) b.push(extra); return b; };
+  const tk=['Kernpunkt der Meldung in einem Satz','Wichtige Zahl oder Angabe mit Beleg','Was daraus für die Branche folgt'];
+  return {
+    A:{title:`${s.title}: Was dahintersteckt`, teaser:'Auf den ersten Blick eine Randnotiz. Bei genauerem Hinsehen eine Frage für die ganze Branche.', body:base('Interessant ist weniger das Ereignis selbst, sondern was es über die Richtung des Radverkehrs verrät.'), words:w, takeaways:tk, seo:`${s.title}`.slice(0,58), slug:'/'+s.title.toLowerCase().replace(/[^a-zäöü0-9]+/g,'-').slice(0,32)},
+    B:{title:`${s.title} — und die Frage dahinter`, teaser:'Es geht nicht nur um diese eine Meldung, sondern um das größere Bild.', body:base('Es geht nicht darum, das Ereignis zu bewerten, sondern es einzuordnen: für Handel, Kommunen und den Radverkehr insgesamt.'), words:w, takeaways:tk, seo:`${s.title}`.slice(0,58), slug:'/'+s.title.toLowerCase().replace(/[^a-zäöü0-9]+/g,'-').slice(0,32)}
+  };
+}
+
+async function refreshSichtung(btn){
+  const orig=btn?btn.textContent:'';
+  if(btn){ btn.disabled=true; btn.textContent='Hole neue Alerts …'; }
+  try{
+    const r=await fetch('/api/ingest',{method:'POST'}); const d=await r.json().catch(()=>({}));
+    if(d.already) toast('Aktualisierung läuft schon — Moment …');
+    await pollIngest();
+    await loadSichtung(); renderSichtung();
+    toast('Sichtung aktualisiert');
+  }catch(e){ toast('Aktualisieren fehlgeschlagen — läuft der Server?',true); }
+  if(btn){ btn.disabled=false; btn.textContent=orig||'↻ Neue Alerts holen'; }
+}
+async function pollIngest(){
+  for(let i=0;i<90;i++){ await new Promise(r=>setTimeout(r,2000));
+    try{ const s=await (await fetch('/api/ingest/status')).json(); if(!s.running) return; }catch(e){ return; }
+  }
+}
+async function loadSichtung(){
+  try{
+    const r = await fetch('/api/sichtung'); if(!r.ok) return;
+    const d = await r.json();
+    if(d && d.items && d.items.length){
+      INBOX.length = 0;
+      const imgs = ['p1','p2','p3','p4','p5','p6','p7','p8'];
+      d.items.forEach((it,i)=>INBOX.push({
+        id: 1000+i,
+        title: it.title,
+        land: it.land || 'Bundesweit',
+        ort: it.ort || it.land || 'Bundesweit',
+        topic: it.topic || '#Radverkehr',
+        sources: it.sources || 1,
+        img: imgs[i%8],
+        relevance: it.relevance != null ? it.relevance : 50,
+        reason: it.reason || '',
+        url: it.url || ''
+      }));
+      renderInboxCount();
+      const sub=document.getElementById('sicht-sub');
+      if(sub) sub.textContent = `Von KIRA vorgefiltert · neueste ${d.items.length}${(d.total&&d.total>d.items.length)?(' von '+d.total):''} — du entscheidest, was reinkommt`;
+      toast(d.items.length + ' Meldungen aus dem Ingest geladen');
+    }
+  }catch(e){ /* als Datei geöffnet oder kein Server -> Beispieldaten behalten */ }
+}
+
+renderFilters(); renderGrid(); renderStack(); renderInboxCount(); initEditor(); loadSichtung(); loadDrafts(); loadPublished();
+</script>
+</body>
+</html>

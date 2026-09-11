@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rohling — News-Generator</title>
+<style>
+  :root { --radius:14px; --shadow:0 10px 40px rgba(0,0,0,.35);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; --serif:Georgia,"Times New Roman",serif; }
+  /* ---- THEME: AUREOLIN (Standard) ---- */
+  body[data-theme="aureolin"] { --bg:#160d03; --panel:#1f1305; --panel-2:#271a08; --border:#4a3418; --text:#f6ecd6; --muted:#a98f63; --accent:#fbe311; --accent-2:#ffcf5a; --accentInk:#261606; --green:#8bd450; --blue:#e0b64a; --font:var(--sans); }
+  /* ---- THEME: CHERRY (hell) ---- */
+  body[data-theme="cherry"] { --bg:#e7dacb; --panel:#f2eae0; --panel-2:#ece2d5; --border:#c6b39d; --text:#2a0709; --muted:#8a6b5e; --accent:#9a0002; --accent-2:#b5361c; --accentInk:#f1e6da; --green:#3a7d1f; --blue:#7a2e12; --font:var(--sans); }
+  /* ---- THEME: VIOLET ---- */
+  body[data-theme="violet"] { --bg:#140a1f; --panel:#211233; --panel-2:#2a1740; --border:#452c5e; --text:#f3e9ef; --muted:#9d84b3; --accent:#f15153; --accent-2:#ffcf5a; --accentInk:#1e0f2b; --green:#7fe0a0; --blue:#b98cff; --font:var(--sans); }
+  /* ---- THEME: NEWSPAPER (hell, Serif) ---- */
+  body[data-theme="newspaper"] { --bg:#f7f4ec; --panel:#ffffff; --panel-2:#f0ece2; --border:#14110c; --text:#14110c; --muted:#6b6459; --accent:#14110c; --accent-2:#a3241a; --accentInk:#f7f4ec; --green:#1c6b2e; --blue:#1a4a8a; --font:var(--serif); }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:var(--font); background:var(--bg); color:var(--text); min-height:100vh; -webkit-font-smoothing:antialiased; }
+  .hidden { display:none !important; }
+  button { font-family:inherit; cursor:pointer; border:none; }
+  .btn { background:var(--accent); color:var(--accentInk); padding:11px 18px; border-radius:10px; font-weight:600; font-size:14px; transition:transform .06s,filter .15s; }
+  .btn:hover { filter:brightness(1.08); } .btn:active { transform:translateY(1px); }
+  .btn.secondary { background:var(--panel-2); color:var(--text); border:1px solid var(--border); }
+  .btn.ghost { background:transparent; color:var(--muted); } .btn.ghost:hover { color:var(--text); }
+  .btn.small { padding:7px 12px; font-size:13px; border-radius:8px; }
+  .btn.green { background:var(--green); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  input,textarea,select { font-family:inherit; background:var(--panel-2); border:1px solid var(--border); color:var(--text); border-radius:10px; padding:12px 14px; font-size:14px; width:100%; outline:none; transition:border-color .15s; }
+  input:focus,textarea:focus,select:focus { border-color:var(--accent); }
+  textarea { resize:vertical; line-height:1.55; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:7px; font-weight:600; letter-spacing:.3px; text-transform:uppercase; }
+  #login { min-height:100vh; display:grid; place-items:center; padding:24px; }
+  .login-card { width:100%; max-width:400px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:34px 30px; box-shadow:var(--shadow); }
+  .brand { display:flex; align-items:center; gap:11px; margin-bottom:26px; }
+  .brand .logo { width:40px; height:40px; border-radius:11px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); display:grid; place-items:center; font-weight:800; color:#fff; font-size:20px; }
+  .brand h1 { font-size:19px; letter-spacing:-.3px; } .brand span { color:var(--muted); font-size:12px; display:block; font-weight:500; }
+  .field { margin-bottom:16px; }
+  .login-card .btn { width:100%; margin-top:6px; padding:13px; }
+  .hint { text-align:center; color:var(--muted); font-size:12px; margin-top:16px; line-height:1.5; }
+  #app { min-height:100vh; display:grid; grid-template-columns:240px 1fr; }
+  aside { background:var(--panel); border-right:1px solid var(--border); padding:22px 16px; display:flex; flex-direction:column; gap:6px; }
+  aside .brand { margin-bottom:24px; padding:0 6px; }
+  .nav-item { display:flex; align-items:center; gap:11px; padding:11px 12px; border-radius:10px; color:var(--muted); font-size:14px; font-weight:500; background:transparent; text-align:left; width:100%; }
+  .nav-item:hover,.nav-item.active { background:var(--panel-2); color:var(--text); }
+  .nav-spacer { flex:1; }
+  .user-chip { display:flex; align-items:center; gap:10px; padding:10px 8px; border-top:1px solid var(--border); margin-top:8px; }
+  .avatar { width:32px; height:32px; border-radius:50%; background:linear-gradient(135deg,var(--blue),#7b5cff); display:grid; place-items:center; font-weight:700; font-size:13px; }
+  .user-chip .meta { font-size:13px; } .user-chip .meta small { color:var(--muted); display:block; font-size:11px; }
+  main { padding:34px 40px; overflow-y:auto; max-height:100vh; }
+  .page-head { margin-bottom:26px; } .page-head h2 { font-size:24px; letter-spacing:-.5px; } .page-head p { color:var(--muted); font-size:14px; margin-top:5px; }
+  .mode-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; max-width:780px; }
+  .mode-card { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:26px; text-align:left; transition:border-color .15s,transform .1s; }
+  .mode-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+  .mode-card .emoji { font-size:30px; } .mode-card h3 { font-size:17px; margin:14px 0 8px; }
+  .mode-card p { color:var(--muted); font-size:13.5px; line-height:1.55; } .mode-card .go { color:var(--accent); font-size:13px; font-weight:600; margin-top:16px; display:inline-block; }
+  .composer { max-width:720px; } .composer .field { margin-bottom:20px; }
+  .row { display:flex; gap:14px; } .row > div { flex:1; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .chip { padding:7px 13px; background:var(--panel-2); border:1px solid var(--border); border-radius:20px; font-size:13px; color:var(--muted); cursor:pointer; }
+  .chip.on { background:rgba(255,90,60,.15); border-color:var(--accent); color:var(--accent); }
+  .composer-actions { display:flex; gap:12px; margin-top:8px; align-items:center; flex-wrap:wrap; }
+  .context-block { margin-bottom:20px; }
+  .ctx-tabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .ctx-tab { display:flex; align-items:center; gap:9px; padding:9px 14px; background:var(--panel-2); border:1px solid var(--border); border-radius:10px; font-size:13.5px; color:var(--muted); font-weight:600; cursor:pointer; }
+  .ctx-tab.sel { border-color:var(--accent); color:var(--text); background:rgba(255,90,60,.08); }
+  .ctx-tab.add { color:var(--muted); border-style:dashed; }
+  .client-dot { width:22px; height:22px; border-radius:6px; background:linear-gradient(135deg,var(--blue),#7b5cff); display:grid; place-items:center; font-size:11px; font-weight:700; color:#fff; flex-shrink:0; }
+  .ctx-editor { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .ctx-name { margin-bottom:12px; font-weight:600; } .ctx-editor textarea { margin-bottom:12px; }
+  .upload-zone { border:1.5px dashed var(--border); border-radius:10px; padding:16px; text-align:center; color:var(--muted); font-size:13.5px; font-weight:600; cursor:pointer; transition:border-color .15s,color .15s; }
+  .upload-zone:hover { border-color:var(--accent); color:var(--text); } .upload-zone small { display:block; font-weight:500; font-size:11.5px; margin-top:3px; opacity:.8; }
+  .file-list { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+  .file-chip { display:inline-flex; align-items:center; gap:8px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; padding:6px 11px; font-size:12.5px; }
+  .file-chip b { cursor:pointer; color:var(--muted); font-weight:700; } .file-chip b:hover { color:var(--accent); }
+  .add-chip { cursor:pointer; color:var(--muted); border-style:dashed; } .add-chip:hover { color:var(--text); border-color:var(--accent); }
+  .loading { max-width:720px; }
+  .load-step { display:flex; align-items:center; gap:13px; padding:14px 16px; background:var(--panel); border:1px solid var(--border); border-radius:10px; margin-bottom:10px; opacity:.4; transition:opacity .3s; }
+  .load-step.active,.load-step.done { opacity:1; } .load-step.active { border-color:var(--accent); }
+  .spinner { width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .check { color:var(--green); font-size:18px; }
+  .editor-layout { display:grid; grid-template-columns:1fr 300px; gap:26px; max-width:1050px; }
+  .headline-variants { margin-bottom:22px; } .headline-variants label { margin-bottom:10px; }
+  .hv { display:flex; align-items:center; gap:12px; padding:13px 15px; background:var(--panel); border:1px solid var(--border); border-radius:10px; margin-bottom:8px; cursor:pointer; }
+  .hv.sel { border-color:var(--accent); background:rgba(255,90,60,.06); }
+  .hv .radio { width:16px; height:16px; border-radius:50%; border:2px solid var(--border); flex-shrink:0; }
+  .hv.sel .radio { border-color:var(--accent); background:var(--accent); box-shadow:inset 0 0 0 3px var(--panel); }
+  .hv span { font-size:15px; font-weight:600; }
+  .article-body { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:26px 28px; }
+  .teaser { font-size:15px; color:var(--accent-2); font-weight:600; line-height:1.5; margin-bottom:18px; }
+  .article-body p { font-size:15px; line-height:1.72; margin-bottom:15px; color:#d6d9df; }
+  .side-card { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:16px; }
+  .side-card h4 { font-size:13px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); margin-bottom:14px; }
+  .src { display:flex; gap:10px; margin-bottom:13px; font-size:13px; } .src .num { width:20px; height:20px; border-radius:5px; background:var(--panel-2); display:grid; place-items:center; font-size:11px; font-weight:700; color:var(--accent); flex-shrink:0; }
+  .src a { color:var(--blue); text-decoration:none; word-break:break-all; } .src a:hover { text-decoration:underline; }
+  .fact { display:flex; gap:9px; font-size:13px; margin-bottom:11px; color:var(--muted); line-height:1.45; }
+  .fact .ic { flex-shrink:0; font-weight:700; } .fact.gedeckt .ic { color:var(--green); } .fact.unsicher .ic { color:var(--accent-2); } .fact.widerspruch .ic { color:var(--accent); }
+  .meta-row { display:flex; justify-content:space-between; font-size:13px; padding:7px 0; border-bottom:1px solid var(--border); } .meta-row:last-child { border:none; } .meta-row span:first-child { color:var(--muted); }
+  .open-q { background:rgba(255,90,60,.08); border:1px solid rgba(255,90,60,.3); border-radius:10px; padding:12px 15px; margin-bottom:20px; font-size:13.5px; }
+  .open-q h4 { color:var(--accent); font-size:12px; text-transform:uppercase; margin-bottom:8px; } .open-q li { margin-left:18px; margin-bottom:5px; line-height:1.5; }
+  .toolbar { display:flex; gap:10px; margin-bottom:22px; flex-wrap:wrap; }
+  .toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--green); color:#04120c; padding:13px 22px; border-radius:10px; font-weight:600; font-size:14px; box-shadow:var(--shadow); transition:transform .3s; z-index:50; max-width:90vw; }
+  .toast.show { transform:translateX(-50%) translateY(0); } .toast.err { background:var(--accent); color:#fff; }
+  .overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); display:grid; place-items:center; z-index:60; padding:24px; }
+  .modal { background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); width:100%; max-width:760px; max-height:82vh; display:flex; flex-direction:column; box-shadow:var(--shadow); }
+  .modal-head { display:flex; justify-content:space-between; align-items:center; padding:18px 22px; border-bottom:1px solid var(--border); } .modal-head h3 { font-size:16px; } .modal-head .x { background:transparent; color:var(--muted); font-size:22px; line-height:1; }
+  .modal-body { padding:22px; overflow-y:auto; }
+  .modal-body pre { white-space:pre-wrap; font-family:"SF Mono",ui-monospace,Menlo,monospace; font-size:12.5px; line-height:1.6; color:#cdd2db; }
+  .modal-body .seg { margin-bottom:20px; } .modal-body .seg-label { display:inline-block; font-size:11px; font-weight:700; letter-spacing:.5px; text-transform:uppercase; padding:3px 9px; border-radius:6px; margin-bottom:8px; }
+  .sl-system { background:rgba(255,90,60,.15); color:var(--accent); } .sl-style { background:rgba(53,201,138,.15); color:var(--green); } .sl-examples { background:rgba(76,141,255,.15); color:var(--blue); } .sl-task { background:rgba(255,176,60,.15); color:var(--accent-2); }
+  .ex-modal textarea { min-height:200px; margin-bottom:14px; }
+  /* theme switcher */
+  .theme-row { padding:10px 8px; border-top:1px solid var(--border); }
+  .theme-row .tl { font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; font-weight:600; }
+  .swatches { display:flex; gap:8px; }
+  .sw { width:26px; height:26px; border-radius:7px; border:2px solid var(--border); cursor:pointer; position:relative; }
+  .sw.on { border-color:var(--accent); }
+  .sw.on::after { content:"✓"; position:absolute; inset:0; display:grid; place-items:center; font-size:12px; color:#fff; mix-blend-mode:difference; }
+  /* onboarding */
+  .ob-card { max-width:520px; }
+  .ob-themes { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:6px 0 18px; }
+  .ob-theme { border:2px solid var(--border); border-radius:12px; padding:14px; cursor:pointer; text-align:left; background:var(--panel-2); }
+  .ob-theme.on { border-color:var(--accent); }
+  .ob-theme .prev { height:46px; border-radius:7px; margin-bottom:10px; display:flex; align-items:center; padding:0 10px; font-weight:800; font-size:15px; }
+  .ob-theme .nm { font-size:13px; font-weight:700; } .ob-theme .ds { font-size:11px; color:var(--muted); margin-top:2px; }
+  @media (max-width:880px){ #app{grid-template-columns:1fr;} aside{display:none;} .mode-grid,.editor-layout{grid-template-columns:1fr;} main{padding:24px 20px;} }
+
+  /* ===== Analog / Editorial Design-Pass ===== */
+  .panel,.side-card,.article-body,.mode-card,.modal,.login-card,.ctx-editor,.load-step,.hv,.upload-zone,input,textarea,select,.btn,.btn.small,.nav-item,.ctx-tab,.file-chip,.chip { border-radius:6px !important; }
+  aside .brand h1 { letter-spacing:-.02em; }
+  .engine-bar { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 14px; border:1px solid var(--border); border-radius:6px; margin-bottom:24px; font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); flex-wrap:wrap; }
+  .engine-bar b { color:var(--text); font-weight:800; letter-spacing:.04em; }
+  .engine-bar .star { color:var(--accent); } .engine-bar .dot { color:var(--green); }
+  .page-head h2 { letter-spacing:-.02em; }
+  .side-card h4 { font-family:ui-monospace,"SF Mono",Menlo,monospace; letter-spacing:.16em; border-bottom:1px solid var(--border); padding-bottom:9px; }
+  label { font-family:ui-monospace,"SF Mono",Menlo,monospace; }
+  .ctx-tab, .chip { font-family:ui-monospace,"SF Mono",Menlo,monospace; letter-spacing:.04em; }
+  /* Editor: Ausgabe mit Akzent-Kante + Faktencheck als Statuszeilen */
+  .article-body { border-top:3px solid var(--accent); }
+  #art-facts .fact { align-items:flex-start; border-top:1px dashed var(--border); padding:9px 0; margin-bottom:0; }
+  #art-facts .fact:first-child { border-top:none; padding-top:2px; }
+  #art-facts .fact .ic { font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12px; }
+  .toolbar #tab-a, .toolbar #tab-b { font-family:ui-monospace,"SF Mono",Menlo,monospace; letter-spacing:.06em; text-transform:uppercase; font-size:11px; }
+</style>
+</head>
+<body data-theme="aureolin">
+
+<!-- LOGIN -->
+<section id="login">
+  <div class="login-card">
+    <div class="brand"><div class="logo">R</div><div><h1>Rohling</h1><span>News-Generator · lokal</span></div></div>
+    <div class="field"><label>Redakteur</label><input id="email" value="Robert"></div>
+    <button class="btn" onclick="login()">Loslegen</button>
+    <p class="hint" id="login-hint">Lokale Version — läuft auf deinem Rechner.</p>
+  </div>
+</section>
+
+<!-- APP -->
+<section id="app" class="hidden">
+  <aside>
+    <div class="brand"><div class="logo">R</div><div><h1 style="font-size:17px">Rohling</h1><span style="font-size:11px">Redaktion</span></div></div>
+    <button class="nav-item active" data-nav="dash" onclick="go('dash')"><span>▤</span> Dashboard</button>
+    <button class="nav-item" onclick="startMode('sources')"><span>＋</span> Neuer Artikel</button>
+    <div class="nav-spacer"></div>
+    <div class="theme-row">
+      <div class="tl">Farbschema</div>
+      <div class="swatches" id="swatches">
+        <div class="sw" data-theme="aureolin" style="background:#fbe311" onclick="setTheme('aureolin')" title="Aureolin"></div>
+        <div class="sw" data-theme="cherry" style="background:#9a0002" onclick="setTheme('cherry')" title="Cherry"></div>
+        <div class="sw" data-theme="violet" style="background:#f15153" onclick="setTheme('violet')" title="Violet"></div>
+        <div class="sw" data-theme="newspaper" style="background:#f7f4ec" onclick="setTheme('newspaper')" title="Newspaper"></div>
+      </div>
+    </div>
+    <div class="user-chip"><div class="avatar">R</div><div class="meta">Robert<small>Redakteur</small></div></div>
+  </aside>
+  <main>
+    <div class="engine-bar">
+      <span><span class="star">✦</span> <b>ROHLING</b> &nbsp;·&nbsp; EDITORIAL ENGINE</span>
+      <span>ENGINE: GPT · OPUS &nbsp;·&nbsp; <span class="dot">● ONLINE</span></span>
+    </div>
+    <!-- DASHBOARD -->
+    <div id="view-dash">
+      <div class="page-head"><h2>Guten Tag 👋</h2><p>Wie möchtest du heute starten?</p></div>
+      <div class="mode-grid">
+        <button class="mode-card" onclick="startMode('sources')"><div class="emoji">🔗</div><h3>Aus Quellen</h3><p>Links oder Artikel einfügen — Rohling liest sie aus und macht daraus eine eigene Meldung mit Quellenangaben.</p><span class="go">Quellen einfügen →</span></button>
+        <button class="mode-card" onclick="startMode('idea')"><div class="emoji">💡</div><h3>Aus Idee / Schlagwort</h3><p>Thema eingeben — Rohling schlägt einen Artikel im Kundenstil vor und markiert, was noch zu belegen ist.</p><span class="go">Thema eingeben →</span></button>
+      </div>
+    </div>
+
+    <!-- SOURCES -->
+    <div id="view-sources" class="hidden">
+      <div class="page-head"><h2>🔗 Neue Meldung aus Quellen</h2><p>Links (werden automatisch ausgelesen) und/oder Text einfügen.</p></div>
+      <div class="composer">
+        <div class="field"><label>Quellen-Links (einer pro Zeile)</label><textarea id="src-links" rows="3" placeholder="https://…"></textarea></div>
+        <div class="field"><label>Text / Notizen / Zitate (optional)</label><textarea id="src-notes" rows="4" placeholder="Eigene Notizen, Zitate mit Sperrvermerk, oder Artikeltext, wenn ein Link nicht auslesbar ist…"></textarea></div>
+        <div class="row">
+          <div class="field"><label>Länge</label><select id="src-len"><option>150 Wörter</option><option selected>350 Wörter</option><option>600 Wörter</option></select></div>
+          <div class="field"><label>Ressort</label><input id="src-ressort" value="Lokales"></div>
+        </div>
+        <div class="field"><label>Tonalität-Zusatz</label>
+          <div class="chips" id="src-tone"><span class="chip on" onclick="toggleChip(this)">Sachlich</span><span class="chip" onclick="toggleChip(this)">Nah dran</span><span class="chip" onclick="toggleChip(this)">Analytisch</span></div>
+        </div>
+        <div class="context-block" id="ctx-sources"></div>
+        <div class="composer-actions">
+          <button class="btn" id="btn-gen-sources" onclick="generate('sources')">✦ Meldung erstellen</button>
+          <button class="btn secondary" onclick="openPrompt('sources')">🔍 Prompt-Vorschau</button>
+          <button class="btn ghost" onclick="go('dash')">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- IDEA -->
+    <div id="view-idea" class="hidden">
+      <div class="page-head"><h2>💡 Neuer Artikel aus Idee</h2><p>Thema oder Schlagwort — Rohling schlägt einen Artikel vor.</p></div>
+      <div class="composer">
+        <div class="field"><label>Thema / Schlagwort</label><input id="idea-topic" placeholder="z. B. Fachkräftemangel Pflege in der Region"></div>
+        <div class="field"><label>Blickwinkel / Auftrag (optional)</label><textarea id="idea-angle" rows="2" placeholder="z. B. lokaler Bezug, konkrete Fragestellung…"></textarea></div>
+        <div class="row">
+          <div class="field"><label>Länge</label><select id="idea-len"><option>150 Wörter</option><option selected>350 Wörter</option><option>600 Wörter</option></select></div>
+          <div class="field"><label>Ressort</label><input id="idea-ressort" value="Lokales"></div>
+        </div>
+        <div class="context-block" id="ctx-idea"></div>
+        <div class="composer-actions">
+          <button class="btn" id="btn-gen-idea" onclick="generate('idea')">✦ Vorschlag erstellen</button>
+          <button class="btn secondary" onclick="openPrompt('idea')">🔍 Prompt-Vorschau</button>
+          <button class="btn ghost" onclick="go('dash')">Abbrechen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div id="view-loading" class="hidden">
+      <div class="page-head"><h2 id="load-title">Rohling arbeitet…</h2><p>Das Modell schreibt — einen Moment.</p></div>
+      <div class="loading" id="load-steps"></div>
+    </div>
+
+    <!-- EDITOR -->
+    <div id="view-editor" class="hidden">
+      <div class="page-head" style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><h2>Entwurf</h2><p>Redigieren, Überschrift wählen, exportieren.</p></div>
+        <span style="font-size:11px;padding:4px 9px;border-radius:20px;background:rgba(255,176,60,.15);color:var(--accent-2);font-weight:600;margin-top:6px">Entwurf</span>
+      </div>
+      <div class="toolbar">
+        <button class="btn small secondary" id="tab-a" onclick="showVariant('a')">Variante A</button>
+        <button class="btn small secondary" id="tab-b" onclick="showVariant('b')">Variante B</button>
+        <span style="flex:1"></span>
+        <button class="btn small secondary" onclick="copyArticle()">⧉ Kopieren</button>
+        <button class="btn small secondary" onclick="downloadArticle()">⭳ Diese Variante als .txt</button>
+        <button class="btn small secondary" onclick="downloadBoth()">⭳ Beide</button>
+        <button class="btn small ghost" onclick="go(lastMode)">↩ Neu generieren</button>
+      </div>
+      <div class="editor-layout">
+        <div class="editor-main">
+          <div id="open-q-box"></div>
+          <div class="article-body">
+            <input id="art-titel" style="font-size:22px;font-weight:700;border:none;background:transparent;padding:0 0 10px;margin-bottom:6px;border-bottom:1px solid var(--border);border-radius:0" />
+            <p class="teaser" id="art-teaser" contenteditable="true"></p>
+            <div id="art-body"></div>
+          </div>
+        </div>
+        <div class="editor-side">
+          <div class="side-card"><h4>Quellen</h4><div id="art-sources"></div></div>
+          <div class="side-card"><h4>Faktencheck</h4><div id="art-facts"></div></div>
+          <div class="side-card"><h4>SEO & Meta</h4><div id="art-meta"></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<div class="toast" id="toast">Gespeichert</div>
+
+<div id="prompt-overlay" class="overlay hidden">
+  <div class="modal">
+    <div class="modal-head"><h3>Das geht ans Modell — zusammengesetzter Prompt</h3><button class="x" onclick="closePrompt()">×</button></div>
+    <div class="modal-body" id="prompt-content"></div>
+  </div>
+</div>
+
+<div id="ob-overlay" class="overlay hidden">
+  <div class="modal ob-card">
+    <div class="modal-head"><h3>Willkommen bei Rohling 👋</h3></div>
+    <div class="modal-body">
+      <label>Wähle dein Farbschema (jederzeit änderbar)</label>
+      <div class="ob-themes" id="ob-themes">
+        <div class="ob-theme on" data-theme="aureolin" onclick="obPick('aureolin')"><div class="prev" style="background:#fbe311;color:#261606">Rohling</div><div class="nm">Aureolin</div><div class="ds">Gelb · kräftig, wach</div></div>
+        <div class="ob-theme" data-theme="cherry" onclick="obPick('cherry')"><div class="prev" style="background:#9a0002;color:#f1e6da">Rohling</div><div class="nm">Cherry</div><div class="ds">Rot/Creme · redaktionell</div></div>
+        <div class="ob-theme" data-theme="violet" onclick="obPick('violet')"><div class="prev" style="background:#321847;color:#f15153">Rohling</div><div class="nm">Violet</div><div class="ds">Violett · modern</div></div>
+        <div class="ob-theme" data-theme="newspaper" onclick="obPick('newspaper')"><div class="prev" style="background:#f7f4ec;color:#14110c;border:1px solid #14110c">Rohling</div><div class="nm">Newspaper</div><div class="ds">S/W · Zeitung, seriös</div></div>
+      </div>
+      <button class="btn" onclick="finishOnboarding()" style="width:100%">Los geht's →</button>
+    </div>
+  </div>
+</div>
+
+<div id="ex-overlay" class="overlay hidden">
+  <div class="modal ex-modal">
+    <div class="modal-head"><h3>Beispielartikel als Stilvorlage</h3><button class="x" onclick="closeEx()">×</button></div>
+    <div class="modal-body">
+      <label>Vollständiger Text eines echten Kundenartikels</label>
+      <textarea id="ex-text" placeholder="Ganzen Artikel hier einfügen — das Modell übernimmt daraus den Ton."></textarea>
+      <button class="btn" onclick="saveEx()">Hinzufügen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- State ---------- */
+let clients = [];
+let activeClient = null;
+let lastMode = 'sources';
+let lastResult = null;
+let selectedHeadline = 0;
+
+/* ---------- Theme ---------- */
+function setTheme(name){
+  document.body.setAttribute('data-theme', name);
+  try { localStorage.setItem('rohling-theme', name); } catch(e){}
+  document.querySelectorAll('#swatches .sw').forEach(s => s.classList.toggle('on', s.getAttribute('data-theme')===name));
+}
+(function initTheme(){
+  let t='aureolin';
+  try { t = localStorage.getItem('rohling-theme') || 'aureolin'; } catch(e){}
+  document.body.setAttribute('data-theme', t);
+})();
+
+/* ---------- Onboarding ---------- */
+let obTheme='aureolin';
+function obPick(name){ obTheme=name; setTheme(name); document.querySelectorAll('#ob-themes .ob-theme').forEach(el=>el.classList.toggle('on', el.getAttribute('data-theme')===name)); }
+function finishOnboarding(){
+  try { localStorage.setItem('rohling-onboarded','1'); } catch(e){}
+  document.getElementById('ob-overlay').classList.add('hidden');
+}
+
+async function login() {
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  setTheme(document.body.getAttribute('data-theme') || 'aureolin');
+  let onboarded=false; try { onboarded=!!localStorage.getItem('rohling-onboarded'); } catch(e){}
+  if(!onboarded){ obPick(document.body.getAttribute('data-theme')||'aureolin'); document.getElementById('ob-overlay').classList.remove('hidden'); }
+  await loadClients();
+}
+async function loadClients() {
+  try {
+    clients = await (await fetch('/api/clients')).json();
+  } catch { clients = []; }
+  if (!clients.length) clients = [{ id:1, name:'Neuer Kunde', context:'', files:[], examples:[] }];
+  activeClient = clients[0].id;
+  renderContexts();
+}
+let saveTimer;
+function persistClients() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { fetch('/api/clients', { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(clients) }); }, 500);
+}
+
+/* ---------- Navigation ---------- */
+function go(view) {
+  ['dash','sources','idea','loading','editor'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
+  document.getElementById('view-'+view).classList.remove('hidden');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (view==='dash') document.querySelector('[data-nav="dash"]').classList.add('active');
+  document.querySelector('main').scrollTop = 0;
+}
+function startMode(m) { lastMode = m; go(m); }
+function toggleChip(el) { el.parentElement.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); }
+
+/* ---------- Kundenprofile ---------- */
+function getClient() { return clients.find(c => c.id === activeClient) || clients[0]; }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderContexts() {
+  ['ctx-sources','ctx-idea'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    const tabs = clients.map(c => `<div class="ctx-tab ${c.id===activeClient?'sel':''}" onclick="selectClient(${c.id})"><div class="client-dot">${esc(c.name.charAt(0))}</div>${esc(c.name)}${(c.context&&c.context.trim()||((c.examples||[]).length))?' •':''}</div>`).join('') + `<div class="ctx-tab add" onclick="addClient()">＋ Kunde</div>`;
+    const c = getClient();
+    const chips = (c.files||[]).map((f,i)=>{ const nm=typeof f==='string'?f:f.name; const w=(typeof f==='object'&&f.words)?` · ${f.words} W.`:''; return `<span class="file-chip">📄 ${esc(nm)}${w} <b onclick="removeClientFile(${i})">×</b></span>`; }).join('');
+    const exChips = (c.examples||[]).map((e,i)=>`<span class="file-chip" style="border-color:var(--blue)" title="${esc((e.text||'').slice(0,120))}">📝 ${esc((e.text||'').split('\\n')[0].slice(0,32)||'Beispiel '+(i+1))}… <b onclick="removeExample(${i})">×</b></span>`).join('');
+    el.innerHTML = `
+      <label>Für welchen Kunden? — aus dessen Perspektive wird geschrieben</label>
+      <div class="ctx-tabs">${tabs}</div>
+      <div class="ctx-editor">
+        <input class="ctx-name" value="${esc(c.name)}" oninput="getClient().name=this.value; persistClients()" placeholder="Kundenname">
+        <textarea rows="4" placeholder="Perspektive, Tonalität, Themen, Do's & Don'ts dieses Kunden…" oninput="getClient().context=this.value; persistClients()">${esc(c.context)}</textarea>
+        <div style="margin-bottom:12px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn small secondary" onclick="developPrompt()">✨ Prompt entwickeln</button><button class="btn small ghost" onclick="deleteClient()">🗑 Kunde löschen</button></div>
+        <label style="margin-top:4px">Dokumente — werden ausgelesen und fließen in den Kontext ein</label>
+        <div class="upload-zone" onclick="uploadClientDoc()">⭱ Dokumente hochladen<small>Briefing · Styleguide · Pressemappe — PDF · Word · TXT</small></div>
+        <div class="file-list">${chips}</div>
+        <label style="margin-top:16px">Stilvorlagen — echte Beispielartikel (Few-Shot, stärkster Qualitätshebel)</label>
+        <div class="file-list">${exChips}<span class="file-chip add-chip" onclick="openEx()">＋ Beispielartikel</span></div>
+      </div>`;
+  });
+}
+function selectClient(id){ activeClient=id; renderContexts(); }
+function addClient(){ const id=Date.now(); clients.push({id, name:'Neuer Kunde', context:'', files:[], examples:[]}); activeClient=id; persistClients(); renderContexts(); }
+function deleteClient(){
+  if(clients.length<=1){ toast('Mindestens ein Kunde nötig',true); return; }
+  const c=getClient();
+  if(!confirm('Kunde „'+c.name+'" wirklich löschen?')) return;
+  clients=clients.filter(x=>x.id!==c.id);
+  activeClient=clients[0].id;
+  persistClients(); renderContexts(); toast('Kunde gelöscht');
+}
+function removeClientFile(i){ getClient().files.splice(i,1); persistClients(); renderContexts(); }
+function fileToB64(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]||''); r.onerror=rej; r.readAsDataURL(file); }); }
+function uploadClientDoc(){
+  const inp=document.createElement('input'); inp.type='file'; inp.multiple=true; inp.accept='.pdf,.docx,.txt,.md';
+  inp.onchange=async ()=>{
+    const c=getClient(); c.files=c.files||[];
+    for(const f of inp.files){
+      toast('Lese '+f.name+' …');
+      try{
+        const b64=await fileToB64(f);
+        const r=await fetch('/api/extract',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:f.name,dataBase64:b64})});
+        const d=await r.json();
+        c.files.push({name:f.name, text:d.text||'', words:d.words||0});
+        toast(d.words?`${f.name}: ${d.words} Wörter erkannt`:`${f.name} hinzugefügt (kein Text auslesbar)`);
+      }catch(e){ c.files.push({name:f.name, text:'', words:0}); toast(f.name+' hinzugefügt',true); }
+      persistClients(); renderContexts();
+    }
+  };
+  inp.click();
+}
+async function developPrompt(){
+  const c=getClient();
+  const kw=prompt('Stichworte zum Kunden (Branche, Ton, Themen, Do\'s & Don\'ts) — Rohling formt daraus ein Stilprofil:', c.context||'');
+  if(kw===null) return;
+  toast('Entwickle Stilprofil …');
+  try{
+    const r=await fetch('/api/develop-prompt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:c.name, keywords:kw})});
+    const d=await r.json();
+    if(r.ok && d.context){ c.context=d.context; persistClients(); renderContexts(); toast('Stilprofil erstellt ✓'); }
+    else toast(d.error||'Konnte kein Profil erstellen',true);
+  }catch(e){ toast('Fehler beim Entwickeln',true); }
+}
+function openEx(){ document.getElementById('ex-text').value=''; document.getElementById('ex-overlay').classList.remove('hidden'); }
+function closeEx(){ document.getElementById('ex-overlay').classList.add('hidden'); }
+function saveEx(){ const t=document.getElementById('ex-text').value.trim(); if(t){ const c=getClient(); c.examples=c.examples||[]; c.examples.push({text:t}); persistClients(); renderContexts(); } closeEx(); }
+function removeExample(i){ getClient().examples.splice(i,1); persistClients(); renderContexts(); }
+
+/* ---------- Generierung (echt) ---------- */
+const STEPS = {
+  sources:['Kundenprofil geladen','Quellen werden ausgelesen…','Fakten extrahiert','Meldung im Hausstil geschrieben'],
+  idea:['Kundenprofil geladen','Thema analysiert','Artikel im Hausstil geschrieben','Belege-Lücken markiert']
+};
+function animateSteps(mode){
+  const box=document.getElementById('load-steps'); box.innerHTML='';
+  STEPS[mode].forEach((s,i)=>box.insertAdjacentHTML('beforeend',`<div class="load-step" id="ls${i}"><div class="spinner"></div><span>${s}</span></div>`));
+  let i=0; const total=STEPS[mode].length;
+  window._loadTimer=setInterval(()=>{
+    if(i>0){ const p=document.getElementById('ls'+(i-1)); if(p){p.classList.add('done'); const sp=p.querySelector('.spinner'); if(sp) sp.outerHTML='<span class="check">✓</span>';} }
+    if(i<total-1){ document.getElementById('ls'+i).classList.add('active'); i++; }
+    else clearInterval(window._loadTimer);
+  },900);
+}
+
+async function generate(mode){
+  lastMode=mode;
+  const btn=document.getElementById('btn-gen-'+mode); if(btn) btn.disabled=true;
+  const c=getClient();
+  let payload={ mode, clientId:c.id, ressort:'', laenge:'', tonalitaet:'' };
+  if(mode==='sources'){
+    payload.links=document.getElementById('src-links').value;
+    payload.notes=document.getElementById('src-notes').value;
+    payload.laenge=document.getElementById('src-len').value;
+    payload.ressort=document.getElementById('src-ressort').value;
+    payload.tonalitaet=(document.querySelector('#src-tone .chip.on')||{}).textContent||'';
+    if(!payload.links.trim() && !payload.notes.trim()){ toast('Bitte Links oder Text einfügen',true); if(btn) btn.disabled=false; return; }
+  } else {
+    payload.topic=document.getElementById('idea-topic').value;
+    payload.angle=document.getElementById('idea-angle').value;
+    payload.laenge=document.getElementById('idea-len').value;
+    payload.ressort=document.getElementById('idea-ressort').value;
+    if(!payload.topic.trim()){ toast('Bitte ein Thema eingeben',true); if(btn) btn.disabled=false; return; }
+  }
+  go('loading');
+  document.getElementById('load-title').textContent = mode==='idea' ? 'Rohling entwirft…' : 'Rohling schreibt…';
+  animateSteps(mode);
+  try{
+    const r=await fetch('/api/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await r.json();
+    clearInterval(window._loadTimer);
+    if(!r.ok){ toast(data.error||'Fehler bei der Generierung',true); go(mode); if(btn) btn.disabled=false; return; }
+    lastResult={ data, client:c, mode };
+    renderEditor(data);
+  }catch(e){ clearInterval(window._loadTimer); toast('Verbindung zum Server fehlgeschlagen',true); go(mode); }
+  finally{ if(btn) btn.disabled=false; }
+}
+
+let currentVariant='a';
+function variantData(d,which){
+  if(d['variante_'+which]) return d['variante_'+which];
+  // Fallback für altes Schema
+  return { titel:(d.ueberschrift_varianten||[''])[0]||'', teaser:d.teaser||'', body:d.body||[] };
+}
+function renderEditor(d){
+  document.getElementById('art-sources').innerHTML=(d.quellen||[]).length?(d.quellen).map(s=>`<div class="src"><div class="num">${s.nr||'•'}</div><a href="${esc(s.url||'#')}" target="_blank">${esc(s.titel||s.url||'Quelle')}</a></div>`).join(''):'<div style="color:var(--muted);font-size:13px">—</div>';
+  document.getElementById('art-facts').innerHTML=(d.faktencheck||[]).length?(d.faktencheck).map(f=>`<div class="fact ${f.status||'gedeckt'}"><span class="ic">${f.status==='widerspruch'?'⚠':f.status==='unsicher'?'?':'✓'}</span><span>${esc(f.aussage)} <em style="color:var(--muted)">(${esc(f.beleg||'')})</em></span></div>`).join(''):'<div style="color:var(--muted);font-size:13px">—</div>';
+  const seo=d.seo||{};
+  document.getElementById('art-meta').innerHTML=`<div class="meta-row"><span>SEO-Titel</span><span>${esc(seo.title||'–')}</span></div><div class="meta-row"><span>Slug</span><span>${esc(seo.slug||'–')}</span></div><div class="meta-row"><span>Kunde</span><span>${esc(getClient().name)}</span></div>`+(seo.meta?`<div style="margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.5">${esc(seo.meta)}</div>`:'');
+  const oq=d.offene_fragen||[];
+  document.getElementById('open-q-box').innerHTML=(oq.length&&oq.some(x=>x&&x.trim()))?`<div class="open-q"><h4>⚠ Vor Veröffentlichung prüfen (gilt für beide Varianten)</h4><ul>${oq.filter(x=>x&&x.trim()).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:'';
+  showVariant('a');
+  go('editor');
+}
+function showVariant(which){
+  currentVariant=which;
+  const v=variantData(lastResult.data,which);
+  document.getElementById('art-titel').value=v.titel||'';
+  document.getElementById('art-teaser').textContent=v.teaser||'';
+  document.getElementById('art-body').innerHTML=(v.body||[]).map(p=>`<p contenteditable="true">${esc(p)}</p>`).join('');
+  document.getElementById('tab-a').style.borderColor = which==='a'?'var(--accent)':'var(--border)';
+  document.getElementById('tab-b').style.borderColor = which==='b'?'var(--accent)':'var(--border)';
+}
+
+/* ---------- Export (unformatierter Text) ---------- */
+function plainText(which){
+  const d=lastResult?lastResult.data:{};
+  const v=variantData(d,which);
+  let titel, teaser, body;
+  if(which===currentVariant){
+    titel=document.getElementById('art-titel').value;
+    teaser=document.getElementById('art-teaser').textContent;
+    body=Array.from(document.querySelectorAll('#art-body p')).map(p=>p.textContent).join('\n\n');
+  } else {
+    titel=v.titel||''; teaser=v.teaser||''; body=(v.body||[]).join('\n\n');
+  }
+  const src=(d.quellen||[]).map(s=>`- ${s.titel||s.url}`).join('\n');
+  return `${titel}\n\n${teaser}\n\n${body}\n\nQuellen:\n${src}\n`;
+}
+function saveTxt(text,name){ const blob=new Blob([text],{type:'text/plain;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; a.click(); }
+function copyArticle(){ navigator.clipboard.writeText(plainText(currentVariant)).then(()=>toast('Variante '+currentVariant.toUpperCase()+' kopiert')); }
+function downloadArticle(){ saveTxt(plainText(currentVariant), 'artikel-variante-'+currentVariant+'.txt'); toast('Variante '+currentVariant.toUpperCase()+' gespeichert'); }
+function downloadBoth(){ saveTxt(plainText('a'),'artikel-variante-a.txt'); saveTxt(plainText('b'),'artikel-variante-b.txt'); toast('Beide Varianten gespeichert'); }
+
+/* ---------- Prompt-Vorschau ---------- */
+const SYSTEM_PROMPT=`Du bist der Schreib-Motor von „Rohling". Substanz vor Stil: Jede Tatsache muss durch das Material gedeckt sein.\nFAKTEN: Nur Fakten aus Quellen/Kontext/Auftrag. Nichts erfinden. Zitate nur wörtlich. Lücken → "offene_fragen".\nSTIL: Exakt nach Kunden-Stilblock. Ton der Stilvorlagen imitieren, nicht deren Inhalte. Keine Buzzwords/Floskeln.\nJOURNALISTISCH: Lede beantwortet W-Fragen, invertierte Pyramide, jede Aussage attribuiert.\nMENSCHLICHE HANDSCHRIFT: Satz- und Absatzlänge bewusst variieren (Burstiness), keine Zusammenfassungs-Floskeln, keine reflexhaften Dreier-Listen.\nAUSGABE: Immer ZWEI eigenständige Fassungen (variante_a, variante_b) — je titel/teaser/body[]. Gemeinsam: quellen[], faktencheck[], seo{}, offene_fragen[]. Nur gültiges JSON.`;
+function openPrompt(mode){
+  const c=getClient();
+  const fileNames=(c.files||[]).map(f=>typeof f==='string'?f:f.name);
+  const styleBlock=`KUNDE: ${c.name}\n${c.context||''}`+(fileNames.length?`\n\nKontext-Dokumente: ${fileNames.join(', ')}`:'');
+  const exBlock=(c.examples||[]).length?(c.examples).map((e,i)=>`<beispiel_${i+1}>\n${(e.text||'').slice(0,300)}…\n</beispiel_${i+1}>`).join('\n\n'):'(noch keine Stilvorlagen — Ton nur über Stilblock)';
+  let task;
+  if(mode==='sources'){
+    const links=(document.getElementById('src-links').value||'').trim().split('\n').filter(Boolean);
+    task=`AUFTRAG · Modus: aus Quellen\nRessort: ${document.getElementById('src-ressort').value} · Länge: ${document.getElementById('src-len').value}\n\nQUELLEN (werden serverseitig ausgelesen)\n${links.map((l,i)=>`[${i+1}] ${l}`).join('\n')||'(keine)'}\n\nNOTIZEN\n${document.getElementById('src-notes').value||'(keine)'}`;
+  } else {
+    task=`AUFTRAG · Modus: aus Idee\nRessort: ${document.getElementById('idea-ressort').value} · Länge: ${document.getElementById('idea-len').value}\n\nTHEMA: ${document.getElementById('idea-topic').value}\nBLICKWINKEL: ${document.getElementById('idea-angle').value||'(offen)'}`;
+  }
+  document.getElementById('prompt-content').innerHTML=
+    `<div class="seg"><span class="seg-label sl-system">1 · System-Prompt (fix)</span><pre>${esc(SYSTEM_PROMPT)}</pre></div>`+
+    `<div class="seg"><span class="seg-label sl-style">2 · Kunden-Stilblock</span><pre>${esc(styleBlock)}</pre></div>`+
+    `<div class="seg"><span class="seg-label sl-examples">3 · Stilvorlagen</span><pre>${esc(exBlock)}</pre></div>`+
+    `<div class="seg"><span class="seg-label sl-task">4 · Auftrag</span><pre>${esc(task)}</pre></div>`;
+  document.getElementById('prompt-overlay').classList.remove('hidden');
+}
+function closePrompt(){ document.getElementById('prompt-overlay').classList.add('hidden'); }
+
+/* ---------- Toast ---------- */
+let toastTimer;
+function toast(msg,isErr){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.toggle('err',!!isErr); t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2600); }
+</script>
+</body>
+</html>

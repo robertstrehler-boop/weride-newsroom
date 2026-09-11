@@ -1,0 +1,47 @@
+services:
+  - type: web
+    name: weride-newsroom
+    runtime: node
+    rootDir: newsroom-app
+    plan: starter            # immer-an, ~7 $/Monat (free spinnt herunter)
+    buildCommand: npm install
+    startCommand: node server.js
+    autoDeploy: true
+    disk:
+      name: newsroom-data    # persistente Ablage für Sichtung/Entwürfe/Veröffentlicht
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /var/data
+      - key: INGEST_AT        # täglicher Auto-Ingest, Serverzeit = UTC. 03:30 UTC ≈ 05:30 DE (Sommer)
+        value: "03:30"
+      - key: INGEST_ON_BOOT   # nach erstem Deploy einmalig füllen, wenn noch keine Sichtung da ist
+        value: "true"
+      - key: INGEST_EVERY_MIN # tagsüber automatisch nachladen (Minuten; inkrementell = günstig). 0 = aus
+        value: "120"
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: KIRA_MODEL
+        value: claude-haiku-4-5-20251001
+      - key: GMAIL_LABEL
+        value: Presse
+      - key: LOOKBACK_HOURS
+        value: "48"
+      - key: SICHTUNG_LIMIT   # wie viele (neueste) Meldungen die Sichtung zeigt. 0 = alle
+        value: "30"
+      # --- Geheimnisse: NICHT hier eintragen, sondern im Render-Dashboard (sync:false) ---
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: NEWSROOM_PASSWORD   # Team-Passwort für den Zugang
+        sync: false
+      - key: ADMIN_TOKEN         # nur für dich: Zugang zu /admin (Kosten/Token)
+        sync: false
+      - key: USD_EUR             # Kurs für die EUR-Schätzung im Admin
+        value: "0.92"
