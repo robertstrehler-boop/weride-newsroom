@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512" role="img" aria-label="KIRA">
+  <defs>
+    <linearGradient id="kiraGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF5BA6"/>
+      <stop offset="1" stop-color="#E01E6A"/>
+    </linearGradient>
+  </defs>
+  <circle cx="50" cy="46" r="34" fill="url(#kiraGrad)"/>
+  <path d="M27 66 L13 90 L45 77 Z" fill="url(#kiraGrad)"/>
+  <path d="M50 27 C52.5 40.5 57 45 70 46 C57 47 52.5 51.5 50 65 C47.5 51.5 43 47 30 46 C43 45 47.5 40.5 50 27 Z" fill="#fff"/>
+</svg>
