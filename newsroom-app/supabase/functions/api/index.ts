@@ -143,9 +143,12 @@ Deno.serve(async (req: Request) => {
   try {
     /* ----- Sichtung ----- */
     if (action === 'sichtung') {
-      const { data } = await db.from('sichtung').select('*').order('relevance', { ascending: false }).order('received_at', { ascending: false }).limit(SICHTUNG_LIMIT);
+      const { data } = await db.from('sichtung').select('*').order('relevance', { ascending: false }).order('received_at', { ascending: false }).limit(SICHTUNG_LIMIT * 3);
+      const { data: usedRows } = await db.from('stories').select('url');
+      const used = new Set((usedRows || []).map((r: any) => r.url).filter(Boolean));
+      const fresh = (data || []).filter((r: any) => !r.url || !used.has(r.url)).slice(0, SICHTUNG_LIMIT);
       const { count } = await db.from('sichtung').select('*', { count: 'exact', head: true });
-      const items = (data || []).map((r: any, i: number) => ({ id: 1000 + i, title: r.title, url: r.url, land: r.land, ort: r.ort, topic: r.topic, sources: r.sources, relevance: r.relevance, reason: r.reason }));
+      const items = fresh.map((r: any, i: number) => ({ id: 1000 + i, title: r.title, url: r.url, land: r.land, ort: r.ort, topic: r.topic, sources: r.sources, relevance: r.relevance, reason: r.reason }));
       return json({ items, count: items.length, total: count || items.length });
     }
 
@@ -159,7 +162,7 @@ Deno.serve(async (req: Request) => {
     if (action === 'story.create') {
       const s = body.story || {};
       if (!s.story_id) s.story_id = s.url || ('own-' + Date.now() + '-' + Math.floor(Math.random() * 1e4));
-      const row = { story_id: s.story_id, title: s.title, url: s.url || null, land: s.land, ort: s.ort, topic: s.topic, sources: s.sources || 1, img: s.img || 'p1', reason: s.reason || '', kira: !!s.kira, eigen: !!s.eigen, status: s.status || 'grid', owner: s.owner || null, variant: s.variant || 'A', laenge: s.laenge || 'News', article: s.article || null, research: s.research || null, updated_at: new Date().toISOString() };
+      const row = { story_id: s.story_id, title: s.title, url: s.url || null, land: s.land, ort: s.ort, topic: s.topic, sources: s.sources || 1, img: s.img || 'p1', reason: s.reason || '', kira: !!s.kira, eigen: !!s.eigen, top: !!s.top, status: s.status || 'grid', owner: s.owner || null, variant: s.variant || 'A', laenge: s.laenge || 'News', article: s.article || null, research: s.research || null, updated_at: new Date().toISOString() };
       const { error } = await db.from('stories').upsert(row, { onConflict: 'story_id', ignoreDuplicates: false });
       if (error) return json({ error: error.message }, 500);
       return json({ ok: true, story_id: s.story_id });
@@ -188,10 +191,12 @@ Deno.serve(async (req: Request) => {
         out = (data || []).filter((r: any) => r.url).map((r: any) => ({ title: r.title, url: r.url, land: r.land, ort: r.ort, topic: r.topic, sources: r.sources, kira: true, reason: (r.reason || '') + ' · aus dem Ingest' }));
         mode = out.length ? 'ingest' : 'leer';
       }
-      // in Grid schreiben (dedupe per url = story_id)
-      for (const t of out) {
-        const sid = t.url;
-        await db.from('stories').upsert({ story_id: sid, title: t.title, url: t.url, land: t.land, ort: t.ort, topic: t.topic, sources: t.sources || 1, img: 'p' + (Math.floor(Math.random() * 8) + 1), reason: t.reason, kira: true, status: 'grid', updated_at: new Date().toISOString() }, { onConflict: 'story_id', ignoreDuplicates: true });
+      // bereits übernommene/verworfene Themen (irgendein Status) ausblenden
+      const urls = out.map((o: any) => o.url).filter(Boolean);
+      if (urls.length) {
+        const { data: ex } = await db.from('stories').select('url').in('url', urls);
+        const have = new Set((ex || []).map((r: any) => r.url));
+        out = out.filter((o: any) => !have.has(o.url));
       }
       return json({ items: out, count: out.length, mode, query: q || 'WE-RIDE-Themen' });
     }

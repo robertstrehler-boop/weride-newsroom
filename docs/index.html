@@ -265,6 +265,8 @@
   .find-foot{display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg);padding:10px 0 2px;}
   .find-bulk{background:var(--accent);color:#fff;font-weight:700;font-size:13px;padding:10px 14px;border:none;border-radius:10px;cursor:pointer;}
   .find-bulk.ghost{background:#fff;border:1px solid var(--line);color:var(--ink);}
+  .find-row.dup{background:rgba(201,138,0,.06);border-color:rgba(201,138,0,.3);}
+  .dupwarn{display:block;font-size:10.5px;font-weight:800;color:var(--amber);margin:1px 0 2px;}
 </style>
 </head>
 <body>
@@ -415,6 +417,19 @@ function sHeaders(){ return { 'Content-Type':'application/json', apikey:SUPA_ANO
 function apiGet(action, query){ return fetch(SUPA_FN+'?action='+action+(query?('&'+query):''), { headers:sHeaders() }); }
 function apiPost(action, payload){ return fetch(SUPA_FN+'?action='+action, { method:'POST', headers:sHeaders(), body:JSON.stringify(payload||{}) }); }
 function ensureTeam(){ if(!teamToken()){ const t=prompt('Team-Passwort für den WE RIDE Newsroom:'); if(t){ try{ localStorage.setItem('nr-team', t.trim()); }catch(e){} } } }
+let CID=1;
+async function loadBoard(){
+  try{
+    const [g,s]=await Promise.all([apiGet('stories','status=grid'),apiGet('stories','status=stack')]);
+    if(!g.ok||!s.ok) return;
+    const grid=(await g.json()).items||[]; const stk=(await s.json()).items||[];
+    STORIES.length=0; stack.length=0; Object.keys(stackOwner).forEach(k=>delete stackOwner[k]); reassignedNew.clear();
+    const mk=(row,st)=>{ const id=CID++; STORIES.push({ id, sid:row.story_id, title:row.title, url:row.url||'', land:row.land, ort:row.ort, topic:row.topic, sources:row.sources||1, img:row.img||'p1', reason:row.reason||'', kira:row.kira, eigen:row.eigen, top:!!row.top, neu:false, time:'', sort:0 }); if(st==='stack'){ stack.push(id); stackOwner[id]=row.owner; if(row.is_new) reassignedNew.add(id); } };
+    grid.forEach(r=>mk(r,'grid')); stk.forEach(r=>mk(r,'stack'));
+    document.getElementById('live-count').textContent=STORIES.length;
+    renderGrid(); renderStack();
+  }catch(e){ /* offline */ }
+}
 
 const STORIES = [];
 const _DEMO_STORIES = [
@@ -472,7 +487,10 @@ function renderSichtung(){
 function approveInbox(id){
   const i=INBOX.findIndex(x=>x.id===id); if(i<0) return;
   const it=INBOX.splice(i,1)[0];
-  STORIES.unshift({ id:900+id, title:it.title, land:it.land, ort:it.ort, topic:it.topic, sources:it.sources, time:'gerade übernommen', sort:2002, img:it.img, neu:true, url:it.url||'' });
+  const sid=it.url||('own-'+Date.now()+'-'+Math.floor(Math.random()*1e4));
+  const cid=CID++;
+  STORIES.unshift({ id:cid, sid, title:it.title, land:it.land, ort:it.ort, topic:it.topic, sources:it.sources, time:'gerade übernommen', sort:2002, img:it.img, neu:true, url:it.url||'' });
+  apiPost('story.create',{story:{ story_id:sid, status:'grid', title:it.title, url:it.url||'', land:it.land, ort:it.ort, topic:it.topic, sources:it.sources, img:it.img }}).catch(()=>{});
   document.getElementById('live-count').textContent=STORIES.length;
   renderInboxCount(); renderSichtung(); renderGrid(); toast('In den Newsroom übernommen');
 }
@@ -523,8 +541,9 @@ function addOwnStory(){
   if(!kw.startsWith('#')) kw='#'+kw;
   const note=document.getElementById('own-note').value.trim();
   const url=document.getElementById('own-url').value.trim();
-  const id=700000+Math.floor(Math.random()*100000);
-  STORIES.unshift({ id, title:t, land, ort:land, topic:kw, sources:url?1:0, time:'gerade angelegt', sort:2003, img:'p1', neu:true, eigen:true, reason:note, url });
+  const cid=CID++; const sid=url||('own-'+Date.now()+'-'+Math.floor(Math.random()*1e4));
+  STORIES.unshift({ id:cid, sid, title:t, land, ort:land, topic:kw, sources:url?1:0, time:'gerade angelegt', sort:2003, img:'p1', neu:true, eigen:true, reason:note, url });
+  apiPost('story.create',{story:{ story_id:sid, status:'grid', title:t, url, land, ort:land, topic:kw, sources:url?1:0, eigen:true, reason:note }}).catch(()=>{});
   document.getElementById('live-count').textContent=STORIES.length;
   closeOwn(); renderGrid(); toast(url?'Eigenes Thema mit Quelle ins Grid gelegt':'Eigenes Thema ins Grid gelegt');
 }
@@ -553,8 +572,7 @@ function openPublishedItem(pubId){
   const p=published.find(x=>x.pubId===pubId); if(!p) return;
   closePublished();
   M={ list:[p.storyId!=null?p.storyId:('pub-'+pubId)], idx:0, pubId:p.pubId };
-  M.story = STORIES.find(x=>x.id===p.storyId) || { id:(p.storyId!=null?p.storyId:('pub-'+pubId)), title:p.title, ort:p.ort||'—', land:p.land||p.ort||'—', topic:p.topic||'', url:p.url||'', sources:1, img:'p1' };
-  if(p.url && !M.story.url) M.story.url=p.url;
+  M.story = { id:('pub-'+pubId), sid:p.pubId, title:p.title, ort:p.ort||'—', land:p.land||p.ort||'—', topic:p.topic||'', url:p.url||'', sources:1, img:'p1' };
   M.researching=false; M.researched=true; M.research=p.research||{angles:[],offen:'—',sources:[],facts:[]};
   M.generating=false; M.drafted=true; M.article=p.article||{A:{title:p.title,teaser:'',body:[''],takeaways:['','','']},B:{title:p.title,teaser:'',body:[''],takeaways:['','','']}}; M.variant=p.variant||'A'; M.laenge=p.laenge||'News';
   M.kiraAnswer=null; M.kiraAsking=false;
@@ -583,7 +601,7 @@ function renderGrid(){
     </div>`;
   }).join('');
 }
-function toggleTop(id,e){ if(e) e.stopPropagation(); const s=STORIES.find(x=>x.id===id); if(!s) return; s.top=!s.top; renderGrid(); toast(s.top?'★ Top-Thema — große Kachel':'Wieder normale Kachel'); }
+function toggleTop(id,e){ if(e) e.stopPropagation(); const s=STORIES.find(x=>x.id===id); if(!s) return; s.top=!s.top; if(s.sid) apiPost('story.update',{story_id:s.sid,patch:{top:s.top}}).catch(()=>{}); renderGrid(); toast(s.top?'★ Top-Thema — große Kachel':'Wieder normale Kachel'); }
 function setFilter(){ renderGrid(); }
 function openFind(){ document.getElementById('find-q').value=''; FOUND=[]; const rb=document.getElementById('find-results'); if(rb) rb.innerHTML=''; document.getElementById('find-overlay').classList.add('on'); setTimeout(()=>{ const i=document.getElementById('find-q'); if(i) i.focus(); },60); }
 function closeFind(){ document.getElementById('find-overlay').classList.remove('on'); }
@@ -602,19 +620,22 @@ async function runFind(){
   }catch(e){ toast('Suche fehlgeschlagen — bist du angemeldet?',true); }
   btn.disabled=false; btn.textContent=old;
 }
+function normTitle(t){ return (t||'').toLowerCase().replace(/[^a-z0-9äöüß ]/g,'').replace(/\s+/g,' ').trim().slice(0,60); }
+function existingTitleSet(){ const set=new Set(); STORIES.forEach(s=>set.add(normTitle(s.title))); (published||[]).forEach(p=>set.add(normTitle(p.title))); (DRAFTS||[]).forEach(d=>set.add(normTitle(d.title))); return set; }
 function renderFindResults(mode){
   const box=document.getElementById('find-results'); if(!box) return;
-  if(!FOUND.length){ box.innerHTML='<div style="text-align:center;color:var(--dim);padding:20px 0;font-size:13px">Keine neuen Treffer (oder schon im Grid). Anderer Suchbegriff?</div>'; return; }
+  if(!FOUND.length){ box.innerHTML='<div style="text-align:center;color:var(--dim);padding:20px 0;font-size:13px">Keine neuen Treffer (schon übernommen/verworfen oder nichts gefunden). Anderer Suchbegriff?</div>'; return; }
   const modeTxt = mode==='web' ? 'im Netz gefunden' : (mode==='ingest' ? 'aus dem Ingest' : '');
+  const ex=existingTitleSet();
   box.innerHTML = `<div class="find-head">${FOUND.length} Treffer ${modeTxt} — auswählen und importieren</div>`
-    + FOUND.map((t,i)=>`<div class="find-row">
-        <input type="checkbox" class="find-cb" data-i="${i}" checked>
-        <div class="find-m"><b>${esc(t.title)}</b><span>${esc(t.reason||'')}</span><a href="${t.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${domain(t.url)} ↗</a></div>
+    + FOUND.map((t,i)=>{ const dup=ex.has(normTitle(t.title)); return `<div class="find-row${dup?' dup':''}">
+        <input type="checkbox" class="find-cb" data-i="${i}" ${dup?'':'checked'}>
+        <div class="find-m"><b>${esc(t.title)}</b>${dup?'<span class="dupwarn">⚠ evtl. schon im Newsroom</span>':''}<span>${esc(t.reason||'')}</span><a href="${t.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${domain(t.url)} ↗</a></div>
         <div class="find-btns"><button class="find-mini" onclick="importOne(${i},'stack')">→ Stack</button><button class="find-mini" onclick="importOne(${i},'grid')">Ins Grid</button></div>
-      </div>`).join('')
+      </div>`; }).join('')
     + `<div class="find-foot"><button class="find-bulk ghost" onclick="importSelected('grid')">Auswahl ins Grid</button><button class="find-bulk" onclick="importSelected('stack')">Auswahl in meinen Stack</button></div>`;
 }
-function addFound(t){ const ex=STORIES.find(s=>s.url && s.url===t.url); if(ex) return ex.id; const id=140000+Math.floor(Math.random()*100000); STORIES.unshift({ id, title:t.title, land:t.land||'Bundesweit', ort:t.ort||'Bundesweit', topic:t.topic||'#Radverkehr', sources:t.sources||1, time:'von KIRA gefunden', sort:2001, img:'p'+((id%8)+1), neu:true, kira:true, reason:t.reason||'', url:t.url }); return id; }
+function addFound(t){ const ex=STORIES.find(s=>s.url && s.url===t.url); if(ex) return ex.id; const cid=CID++; const sid=t.url; STORIES.unshift({ id:cid, sid, title:t.title, land:t.land||'Bundesweit', ort:t.ort||'Bundesweit', topic:t.topic||'#Radverkehr', sources:t.sources||1, time:'von KIRA gefunden', sort:2001, img:'p'+((cid%8)+1), neu:true, kira:true, reason:t.reason||'', url:t.url }); apiPost('story.create',{story:{ story_id:sid, status:'grid', title:t.title, url:t.url, land:t.land||'Bundesweit', ort:t.ort||'Bundesweit', topic:t.topic||'#Radverkehr', sources:t.sources||1, kira:true, reason:t.reason||'' }}).catch(()=>{}); return cid; }
 function importOne(i,dest){ const t=FOUND[i]; if(!t) return; if(dest==='stack' && !currentEditor){ document.getElementById('editor-overlay').classList.add('on'); return; } const id=addFound(t); if(dest==='stack' && !stack.includes(id)){ stack.push(id); stackOwner[id]=currentEditor; } document.getElementById('live-count').textContent=STORIES.length; FOUND.splice(i,1); renderGrid(); renderStack(); renderFindResults('web'); toast(dest==='stack'?'Auf deinen Stack':'Ins Grid gelegt'); }
 function importSelected(dest){
   const idx=[...document.querySelectorAll('.find-cb:checked')].map(c=>parseInt(c.dataset.i,10)).sort((a,b)=>b-a);
@@ -632,11 +653,12 @@ function addToStack(id,e){
   if(!currentEditor){ document.getElementById('editor-overlay').classList.add('on'); return; }
   if(stack.includes(id)) return;
   stack.push(id); stackOwner[id]=currentEditor;
-  renderGrid(); renderStack();
   const s = STORIES.find(x=>x.id===id);
+  if(s&&s.sid) apiPost('story.update',{story_id:s.sid,patch:{status:'stack',owner:currentEditor}}).catch(()=>{});
+  renderGrid(); renderStack();
   toast(`„${short(s.title)}" auf deinen Stack`);
 }
-function removeFromStack(id){ const i=stack.indexOf(id); if(i>-1)stack.splice(i,1); delete stackOwner[id]; renderGrid(); renderStack(); }
+function removeFromStack(id){ const i=stack.indexOf(id); if(i>-1)stack.splice(i,1); delete stackOwner[id]; reassignedNew.delete(id); const s=STORIES.find(x=>x.id===id); if(s&&s.sid) apiPost('story.update',{story_id:s.sid,patch:{status:'grid',owner:null,is_new:false}}).catch(()=>{}); renderGrid(); renderStack(); }
 
 function renderStack(){
   const mine = myStack();
@@ -683,7 +705,7 @@ function toggleStackDetail(){ const id=detailId;
   if(stack.includes(id)){
     if(stackOwner[id]===currentEditor){ removeFromStack(id); }
     else { toast('Bereits von '+stackOwner[id]+' übernommen'); return; }
-  } else { stack.push(id); stackOwner[id]=currentEditor; renderGrid(); renderStack(); }
+  } else { stack.push(id); stackOwner[id]=currentEditor; const s=STORIES.find(x=>x.id===id); if(s&&s.sid) apiPost('story.update',{story_id:s.sid,patch:{status:'stack',owner:currentEditor}}).catch(()=>{}); renderGrid(); renderStack(); }
   renderDetail(); }
 function detailKira(){ const id=detailId; closeDetail(); openMaske(id,{autoKira:true}); }
 function detailMask(){ const id=detailId; closeDetail(); openMaske(id); }
@@ -698,12 +720,12 @@ function openMaske(id,opts){ M={ list:[id], idx:0 }; loadCurrent(); showMaske();
 function openMaskeStack(){ const mine=myStack(); if(!mine.length){ toast('Dein Stack ist leer'); return; } M={ list:[...mine], idx:0 }; loadCurrent(); showMaske(); }
 function showMaske(){ document.getElementById('maske').classList.add('on'); document.body.style.overflow='hidden'; }
 function closeMaske(){ document.getElementById('maske').classList.remove('on'); document.body.style.overflow=''; M=null; }
-function discardCurrent(){ if(!M||!M.story){ closeMaske(); return; } const id=M.story.id; const i=stack.indexOf(id); if(i>-1){ stack.splice(i,1); delete stackOwner[id]; } reassignedNew.delete(id); renderStack(); renderGrid(); toast('Verworfen — zurück ins Grid'); nextStory(); }
+function discardCurrent(){ if(!M||!M.story){ closeMaske(); return; } const id=M.story.id, sid=M.story.sid; const i=stack.indexOf(id); if(i>-1){ stack.splice(i,1); delete stackOwner[id]; } reassignedNew.delete(id); const gi=STORIES.findIndex(x=>x.id===id); if(gi>-1) STORIES.splice(gi,1); if(sid) apiPost('story.update',{story_id:sid,patch:{status:'rejected',owner:null}}).catch(()=>{}); document.getElementById('live-count').textContent=STORIES.length; renderStack(); renderGrid(); toast('Verworfen'); nextStory(); }
 function reassignMenu(ev){ ev.stopPropagation(); const m=document.getElementById('reassign-menu'); const others=EDITORS.filter(e=>e!==currentEditor);
   m.innerHTML=`<div style="padding:7px 12px 4px;font-size:11px;color:var(--dim);font-weight:700">An Redakteur:in übergeben</div>`+others.map(e=>`<div class="em" onclick="reassignTo('${e}')"><span class="ini">${e}</span>Redakteur ${e}</div>`).join('');
   m.style.position='fixed'; m.style.top=(ev.clientY+18)+'px'; m.style.left=Math.min(ev.clientX-40, window.innerWidth-230)+'px'; m.style.right='auto'; m.style.zIndex='90'; m.classList.add('on'); }
-function reassignTo(e){ if(!M||!M.story) return; const id=M.story.id; if(!stack.includes(id)) stack.push(id); stackOwner[id]=e; reassignedNew.add(id); renderStack(); renderGrid(); closeMaske(); toast('An '+e+' übergeben — erscheint dort mit „neu"'); }
-function loadCurrent(){ const id=M.list[M.idx]; M.story=STORIES.find(x=>x.id===id); if(reassignedNew.has(id)){ reassignedNew.delete(id); renderStack(); } M.researching=false; M.researched=false; M.research=null; M.generating=false; M.drafted=false; M.article=null; M.angle=null; M.variant='A'; M.laenge='News'; M.kiraAnswer=null; M.kiraAsking=false; renderMaske(); }
+function reassignTo(e){ if(!M||!M.story) return; const id=M.story.id; if(!stack.includes(id)) stack.push(id); stackOwner[id]=e; reassignedNew.add(id); if(M.story.sid) apiPost('story.update',{story_id:M.story.sid,patch:{status:'stack',owner:e,is_new:true}}).catch(()=>{}); renderStack(); renderGrid(); closeMaske(); toast('An '+e+' übergeben — erscheint dort mit „neu"'); }
+function loadCurrent(){ const id=M.list[M.idx]; M.story=STORIES.find(x=>x.id===id); if(reassignedNew.has(id)){ reassignedNew.delete(id); const s0=STORIES.find(x=>x.id===id); if(s0&&s0.sid) apiPost('story.update',{story_id:s0.sid,patch:{is_new:false}}).catch(()=>{}); renderStack(); } M.researching=false; M.researched=false; M.research=null; M.generating=false; M.drafted=false; M.article=null; M.angle=null; M.variant='A'; M.laenge='News'; M.kiraAnswer=null; M.kiraAsking=false; renderMaske(); }
 function setLaenge(l){ M.laenge=l; renderMaske(); }
 function startBlank(){ M.drafted=true; const blank={title:'',teaser:'',body:[''],takeaways:['','',''],words:0,seo:'',slug:''}; M.article={A:JSON.parse(JSON.stringify(blank)),B:JSON.parse(JSON.stringify(blank))}; renderMaske(); toast('Leerer Entwurf — schreib los, KIRA hilft rechts'); }
 function copyTakeaways(){ const items=[...document.querySelectorAll('#mk-take-list li')].map(li=>'• '+li.textContent.trim()).filter(x=>x.length>2); navigator.clipboard.writeText(items.join('\n')).then(()=>toast('3 Takeaways kopiert')); }
@@ -780,8 +802,8 @@ function mkExport(){
   if(!M || !M.story || !M.article){ toast('Noch kein Entwurf zum Übergeben'); return; }
   captureEdits();
   const s=M.story; const v=M.article[M.variant]||{};
-  const sid=M.pubId||s.url||('p'+Date.now());
-  const story={ story_id:sid, status:'published', title:(v.title||s.title), ort:s.ort, land:s.land||s.ort, topic:s.topic, url:s.url||srcUrl()||'', owner:currentEditor||'?', variant:M.variant, laenge:M.laenge, article:M.article, research:M.research||null, kira:!!s.kira, eigen:!!s.eigen, sources:s.sources||1 };
+  const sid=s.sid||M.pubId||s.url||('p'+Date.now()); M.story.sid=sid;
+  const story={ story_id:sid, status:'published', title:(v.title||s.title), ort:s.ort, land:s.land||s.ort, topic:s.topic, url:s.url||srcUrl()||'', owner:currentEditor||'?', variant:M.variant, laenge:M.laenge, article:M.article, research:M.research||null, kira:!!s.kira, eigen:!!s.eigen, sources:s.sources||1, top:!!s.top };
   if(story.url) publishedKeys.add('url:'+story.url);
   publishedKeys.add('id:'+s.id);
   const i=stack.indexOf(s.id); if(i>-1){ stack.splice(i,1); delete stackOwner[s.id]; }
@@ -806,8 +828,8 @@ function mkSave(){
   if(!M||!M.article){ toast('Noch kein Entwurf zum Speichern'); return; }
   captureEdits();
   const s=M.story; const v=M.article[M.variant]||{};
-  const sid=M.draftId||s.url||('d'+Date.now());
-  const story={ story_id:sid, status:'draft', title:(v.title||s.title), ort:s.ort, land:s.land||s.ort, topic:s.topic, url:s.url||srcUrl()||'', owner:currentEditor||'?', variant:M.variant, laenge:M.laenge, article:M.article, research:M.research||null, kira:!!s.kira, eigen:!!s.eigen, sources:s.sources||1 };
+  const sid=s.sid||M.draftId||s.url||('d'+Date.now()); M.story.sid=sid;
+  const story={ story_id:sid, status:'draft', title:(v.title||s.title), ort:s.ort, land:s.land||s.ort, topic:s.topic, url:s.url||srcUrl()||'', owner:currentEditor||'?', variant:M.variant, laenge:M.laenge, article:M.article, research:M.research||null, kira:!!s.kira, eigen:!!s.eigen, sources:s.sources||1, top:!!s.top };
   apiPost('story.create',{story})
     .then(r=>r.ok?r.json():Promise.reject()).then(async d=>{ M.draftId=d.story_id||sid; const id=s.id; const i=stack.indexOf(id); if(i>-1){ stack.splice(i,1); delete stackOwner[id]; } if(story.url) draftKeys.add('url:'+story.url); draftKeys.add('id:'+id); await loadDrafts(); renderStack(); toast('Entwurf gespeichert — liegt jetzt unter „Entwürfe"'); nextStory(); })
     .catch(()=>toast('Speichern fehlgeschlagen — bist du angemeldet?',true));
@@ -825,8 +847,7 @@ function openDraft(id){
   const dr=DRAFTS.find(x=>x.draftId===id); if(!dr) return;
   closeDrafts();
   M={ list:[dr.storyId], idx:0, draftId:dr.draftId };
-  M.story = STORIES.find(x=>x.id===dr.storyId) || { id:dr.storyId, title:dr.title, ort:dr.ort||'—', land:dr.ort||'—', topic:dr.topic||'', url:dr.url||'', sources:1, img:'p1' };
-  if(dr.url && !M.story.url) M.story.url=dr.url;
+  M.story = { id:('draft-'+dr.draftId), sid:dr.draftId, title:dr.title, ort:dr.ort||'—', land:dr.land||dr.ort||'—', topic:dr.topic||'', url:dr.url||'', sources:1, img:'p1' };
   M.researching=false; M.researched=true; M.research=dr.research||{angles:[],offen:'—',sources:[],facts:[]};
   M.generating=false; M.drafted=true; M.article=dr.article; M.variant=dr.variant||'A'; M.laenge=dr.laenge||'News';
   renderMaske(); showMaske();
@@ -1001,7 +1022,7 @@ async function loadSichtung(){
 }
 
 function startClock(){ const el=document.getElementById('clock'); function upd(){ if(el) el.textContent=new Date().toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' Uhr'; } upd(); setInterval(upd,30000); }
-ensureTeam(); startClock(); renderGrid(); renderStack(); renderInboxCount(); initEditor(); loadSichtung(); loadDrafts(); loadPublished();
+ensureTeam(); startClock(); renderStack(); renderInboxCount(); initEditor(); loadBoard(); loadSichtung(); loadDrafts(); loadPublished();
 </script>
 </body>
 </html>
