@@ -16,7 +16,11 @@
   .app{max-width:1180px;margin:0 auto;background:var(--bg);min-height:100vh;}
 
   /* header */
-  .bar{display:flex;align-items:center;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:20;flex-wrap:wrap;row-gap:10px;}
+  .bar{padding:11px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:20;}
+  .bar-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;row-gap:8px;}
+  .bar-top{margin-bottom:9px;}
+  .bar-top .right{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+  .clock{font-size:12.5px;color:var(--dim);font-weight:600;margin-left:14px;white-space:nowrap;}
   .logo{display:flex;align-items:center;gap:10px;}
   .logo .w{width:30px;height:24px;border:2px solid var(--ink);border-radius:3px;display:grid;place-items:center;font-weight:900;font-size:12px;font-style:italic;}
   .logo b{font-size:16px;font-weight:800;letter-spacing:.05em;}
@@ -51,6 +55,9 @@
   .card:hover .kira{opacity:1;}
   .kira .s{color:var(--accent);}
   .add{position:absolute;bottom:10px;right:10px;width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.95);color:var(--ink);display:grid;place-items:center;font-size:19px;font-weight:400;opacity:0;transition:opacity .12s;}
+  .topbtn{position:absolute;top:9px;right:9px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.92);color:#c2c7cf;display:grid;place-items:center;font-size:15px;opacity:0;transition:opacity .12s;z-index:2;border:none;cursor:pointer;}
+  .card:hover .topbtn{opacity:1;}
+  .topbtn.on{opacity:1;background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(255,46,126,.4);}
   .card:hover .add{opacity:1;}
   .cap{position:absolute;left:0;right:0;bottom:0;padding:13px;}
   .cap h3{color:#fff;font-weight:800;letter-spacing:-.01em;line-height:1.16;margin:0 0 6px;font-size:14.5px;}
@@ -247,6 +254,17 @@
   .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-weight:600;font-size:13.5px;z-index:60;transition:transform .3s;box-shadow:0 8px 30px rgba(0,0,0,.25);}
   .toast.on{transform:translateX(-50%) translateY(0);}
   .hintbar{font-size:11.5px;color:var(--dim);font-weight:600;padding:12px 22px 0;}
+  #find-results{overflow-y:auto;margin-top:6px;}
+  .find-head{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--dim);margin:14px 0 8px;}
+  .find-row{display:flex;gap:10px;align-items:flex-start;padding:10px;border:1px solid var(--line);border-radius:11px;margin-bottom:8px;}
+  .find-cb{margin-top:3px;width:16px;height:16px;flex-shrink:0;accent-color:var(--accent);cursor:pointer;}
+  .find-m{flex:1;min-width:0;} .find-m b{font-size:13.5px;font-weight:700;line-height:1.25;display:block;} .find-m span{font-size:11.5px;color:var(--dim);display:block;margin:2px 0;} .find-m a{font-size:11.5px;color:var(--accent);text-decoration:none;} .find-m a:hover{text-decoration:underline;}
+  .find-btns{display:flex;flex-direction:column;gap:5px;flex-shrink:0;}
+  .find-mini{background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:11.5px;font-weight:700;color:var(--ink);white-space:nowrap;cursor:pointer;}
+  .find-mini:hover{border-color:var(--accent);color:var(--accent);}
+  .find-foot{display:flex;gap:8px;justify-content:flex-end;position:sticky;bottom:0;background:var(--bg);padding:10px 0 2px;}
+  .find-bulk{background:var(--accent);color:#fff;font-weight:700;font-size:13px;padding:10px 14px;border:none;border-radius:10px;cursor:pointer;}
+  .find-bulk.ghost{background:#fff;border:1px solid var(--line);color:var(--ink);}
 </style>
 </head>
 <body>
@@ -262,23 +280,26 @@
 </svg>
 <div class="app">
   <div class="bar">
-    <div class="logo"><b>WE RIDE NEWSROOM</b></div>
-    <div class="right">
+    <div class="bar-row bar-top">
+      <div class="logo"><b>WE RIDE NEWSROOM</b><span class="clock" id="clock"></span></div>
+      <div class="right">
+        <button class="inboxbtn" onclick="openPublished()">Veröffentlicht <span class="n" id="pub-n">0</span></button>
+        <button class="inboxbtn" onclick="openDrafts()">Entwürfe <span class="n" id="draft-n">0</span></button>
+        <button class="stackbtn" onclick="toggleDrawer(true)">Mein Stack <span class="n" id="stack-n">0</span></button>
+        <button class="editorchip" id="editorchip" onclick="toggleEditorMenu(event)">?</button>
+        <div class="editormenu" id="editormenu"></div>
+        <div class="editormenu" id="reassign-menu"></div>
+      </div>
+    </div>
+    <div class="bar-row bar-fns">
       <span class="live"><span class="dot"></span>Live · <span id="live-count">–</span> heute</span>
       <button class="inboxbtn" onclick="openSichtung()">Sichtung <span class="n" id="inbox-n">0</span></button>
       <button class="findbtn" onclick="openOwn()"><span class="s" style="color:var(--accent)">＋</span> Eigenes Thema</button>
       <button class="findbtn" onclick="openFind()"><span class="s">✦</span> Themen finden</button>
-      <button class="stackbtn" onclick="toggleDrawer(true)">Mein Stack <span class="n" id="stack-n">0</span></button>
-      <button class="inboxbtn" onclick="openDrafts()">Entwürfe <span class="n" id="draft-n">0</span></button>
-      <button class="inboxbtn" onclick="openPublished()">Veröffentlicht <span class="n" id="pub-n">0</span></button>
-      <button class="editorchip" id="editorchip" onclick="toggleEditorMenu(event)">?</button>
-      <div class="editormenu" id="editormenu"></div>
-      <div class="editormenu" id="reassign-menu"></div>
     </div>
   </div>
 
-  <div class="filters" id="filters"></div>
-  <div class="hintbar">Klick auf <b>＋</b> legt direkt auf den Stack · Klick auf die Meldung öffnet sie zum Reinschauen</div>
+  <div class="hintbar">Klick auf <b>＋</b> legt auf den Stack · Klick auf die Meldung öffnet sie · <b>★</b> macht daraus ein Top-Thema (große Kachel)</div>
 
   <div class="wrap"><div class="grid" id="grid"></div></div>
 </div>
@@ -313,7 +334,7 @@
 </div>
 
 <div class="eo" id="find-overlay">
-  <div class="box">
+  <div class="box" style="max-width:640px;max-height:88vh;display:flex;flex-direction:column">
     <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0;display:flex;align-items:center;gap:8px"><svg class="kira-ic" viewBox="0 0 100 100"><use href="#kira-mark"/></svg>KIRA — Themen finden</h3><button onclick="closeFind()" style="font-size:24px;color:var(--dim);line-height:1">×</button></div>
     <p>KIRA durchsucht das Netz nach aktuellen, belegten Themen — jedes mit Quelle. Frei formulieren oder leer lassen für allgemeine WE-RIDE-Themen.</p>
     <input id="find-q" class="fi" placeholder="z. B. Was gibt es Neues aus dem BMV?" onkeydown="if(event.key==='Enter')runFind()">
@@ -325,6 +346,7 @@
       <button class="mk-tchip" onclick="setFindQ('ADFC')">ADFC</button>
     </div>
     <button class="mk-cta" style="width:100%;margin-top:14px" id="find-go" onclick="runFind()">KIRA suchen lassen</button>
+    <div id="find-results"></div>
   </div>
 </div>
 
@@ -542,59 +564,66 @@ function openPublishedItem(pubId){
 
 document.getElementById('live-count').textContent = STORIES.length;
 
-function renderFilters(){
-  document.getElementById('filters').innerHTML = FILTERS.map(f =>
-    `<button class="chip ${f===activeFilter?'on':''}" onclick="setFilter('${f}')">${f}</button>`).join('');
-}
-function setFilter(f){ activeFilter=f; renderFilters(); renderGrid(); }
-function matches(s){
-  if(activeFilter==="Für dich") return true;
-  if(activeFilter==="✦ Vorschläge") return !!s.kira;
-  if(activeFilter.startsWith("#")) return s.topic===activeFilter;
-  return s.land===activeFilter;
-}
-function visibleStories(){ return STORIES.filter(s => !stack.includes(s.id) && !isPublished(s) && !isDraft(s) && matches(s)).sort((a,b)=>(b.sort||0)-(a.sort||0)); }
+function visibleStories(){ return STORIES.filter(s => !stack.includes(s.id) && !isPublished(s) && !isDraft(s)).sort((a,b)=>((b.top?1:0)-(a.top?1:0))||((b.sort||0)-(a.sort||0))); }
 
 function renderGrid(){
   const vis = visibleStories();
   const grid = document.getElementById('grid');
-  const kiraCount = STORIES.filter(s=>s.kira && !stack.includes(s.id)).length;
-  const banner = (kiraCount && activeFilter!=='✦ Vorschläge')
-    ? `<div class="kbanner" onclick="setFilter('✦ Vorschläge')"><span style="display:inline-flex;align-items:center;gap:7px"><svg class="kira-ic" viewBox="0 0 100 100"><use href="#kira-mark"/></svg><b>KIRA</b> hat ${kiraCount} Themen für euch entdeckt</span><span class="lnk">anzeigen →</span></div>` : '';
-  if(!vis.length){ grid.innerHTML = banner + `<div class="empty">Keine offenen Meldungen in dieser Ansicht.<br>Wechsle den Filter oder öffne deinen Stack.</div>`; return; }
-  grid.innerHTML = banner + vis.map((s,i)=>{
-    const hero = i===0 ? ' hero' : '';
+  if(!vis.length){ grid.innerHTML = `<div class="empty">Noch keine offenen Meldungen.<br>Übernimm welche aus der Sichtung oder finde Themen mit ✦ KIRA.</div>`; return; }
+  grid.innerHTML = vis.map((s)=>{
+    const hero = s.top ? ' hero' : '';
     const tag = `<span class="rtag">${s.ort}</span>`;
-    const mark = s.eigen ? '<span class="new" style="background:var(--ink)">Eigenes Thema</span>' : (s.kira ? '<span class="new kbadge">KIRA-Vorschlag</span>' : (s.vortag ? '<span class="vortag">Vortag</span>' : (s.neu?'<span class="new">Neu</span>':'')));
-    return `<div class="card${hero}${s.vortag?' isvortag':''}" onclick="openDetail(${s.id})">
+    const mark = s.eigen ? '<span class="new" style="background:var(--ink)">Eigenes Thema</span>' : (s.kira ? '<span class="new kbadge">KIRA-Vorschlag</span>' : (s.neu?'<span class="new">Neu</span>':''));
+    return `<div class="card${hero}" onclick="openDetail(${s.id})">
       <div class="img ${s.img}"></div><div class="shade"></div>
       ${tag}
+      <button class="topbtn${s.top?' on':''}" title="${s.top?'Top-Thema aufheben':'Als Top-Thema (große Kachel)'}" onclick="toggleTop(${s.id},event)">★</button>
       <button class="add" title="Auf den Stack" onclick="addToStack(${s.id},event)">＋</button>
-      <div class="cap"><h3>${s.title}</h3><div class="meta">${mark}${s.agehint?'<span class="agehint">'+s.agehint+'</span>':''}${s.sources} Quellen · ${s.time} · ${s.topic}</div></div>
+      <div class="cap"><h3>${s.title}</h3><div class="meta">${mark}${s.sources} Quellen · ${s.time} · ${s.topic}</div></div>
     </div>`;
   }).join('');
 }
-function openFind(){ document.getElementById('find-q').value=''; document.getElementById('find-overlay').classList.add('on'); setTimeout(()=>{ const i=document.getElementById('find-q'); if(i) i.focus(); },60); }
+function toggleTop(id,e){ if(e) e.stopPropagation(); const s=STORIES.find(x=>x.id===id); if(!s) return; s.top=!s.top; renderGrid(); toast(s.top?'★ Top-Thema — große Kachel':'Wieder normale Kachel'); }
+function setFilter(){ renderGrid(); }
+function openFind(){ document.getElementById('find-q').value=''; FOUND=[]; const rb=document.getElementById('find-results'); if(rb) rb.innerHTML=''; document.getElementById('find-overlay').classList.add('on'); setTimeout(()=>{ const i=document.getElementById('find-q'); if(i) i.focus(); },60); }
 function closeFind(){ document.getElementById('find-overlay').classList.remove('on'); }
 function setFindQ(v){ const i=document.getElementById('find-q'); i.value=v; runFind(); }
+let FOUND=[];
 async function runFind(){
   const q=document.getElementById('find-q').value.trim();
   const btn=document.getElementById('find-go'); btn.disabled=true; const old=btn.textContent; btn.textContent='KIRA durchsucht das Netz …';
   try{
     const r=await apiGet('discover', q?('q='+encodeURIComponent(q)):''); const d=r.ok?await r.json():{items:[]};
     const items=(d.items||[]).filter(t=>t.url);
-    if(!items.length){ toast('KIRA hat nichts gefunden — das ist auch okay.'); btn.disabled=false; btn.textContent=old; return; }
     const present=new Set(STORIES.map(s=>s.url).filter(Boolean));
-    const next=items.filter(t=>!present.has(t.url)).slice(0, q?8:3);
-    if(!next.length){ toast('Diese Treffer liegen schon im Grid.'); btn.disabled=false; btn.textContent=old; return; }
-    let nid=140000+Math.floor(Math.random()*10000);
-    next.forEach(t=>{ STORIES.unshift({ id:nid++, title:t.title, land:t.land||'Bundesweit', ort:t.ort||'Bundesweit', topic:t.topic||'#Radverkehr', sources:t.sources||1, time:'von KIRA gefunden', sort:2001, img:'p'+((nid%8)+1), neu:true, kira:true, reason:t.reason||'', url:t.url }); });
-    document.getElementById('live-count').textContent=STORIES.length;
-    closeFind(); setFilter('✦ Vorschläge');
-    const modeTxt = d.mode==='web' ? 'im Netz' : (d.mode==='ingest' ? 'aus dem Ingest (Fallback)' : '');
-    toast(`✦ KIRA hat ${next.length} Themen ${modeTxt} gefunden`);
-  }catch(e){ toast('Suche fehlgeschlagen — läuft der Server?',true); }
+    FOUND=items.filter(t=>!present.has(t.url));
+    renderFindResults(d.mode);
+    if(!FOUND.length) toast('Keine neuen Treffer.');
+  }catch(e){ toast('Suche fehlgeschlagen — bist du angemeldet?',true); }
   btn.disabled=false; btn.textContent=old;
+}
+function renderFindResults(mode){
+  const box=document.getElementById('find-results'); if(!box) return;
+  if(!FOUND.length){ box.innerHTML='<div style="text-align:center;color:var(--dim);padding:20px 0;font-size:13px">Keine neuen Treffer (oder schon im Grid). Anderer Suchbegriff?</div>'; return; }
+  const modeTxt = mode==='web' ? 'im Netz gefunden' : (mode==='ingest' ? 'aus dem Ingest' : '');
+  box.innerHTML = `<div class="find-head">${FOUND.length} Treffer ${modeTxt} — auswählen und importieren</div>`
+    + FOUND.map((t,i)=>`<div class="find-row">
+        <input type="checkbox" class="find-cb" data-i="${i}" checked>
+        <div class="find-m"><b>${esc(t.title)}</b><span>${esc(t.reason||'')}</span><a href="${t.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${domain(t.url)} ↗</a></div>
+        <div class="find-btns"><button class="find-mini" onclick="importOne(${i},'stack')">→ Stack</button><button class="find-mini" onclick="importOne(${i},'grid')">Ins Grid</button></div>
+      </div>`).join('')
+    + `<div class="find-foot"><button class="find-bulk ghost" onclick="importSelected('grid')">Auswahl ins Grid</button><button class="find-bulk" onclick="importSelected('stack')">Auswahl in meinen Stack</button></div>`;
+}
+function addFound(t){ const ex=STORIES.find(s=>s.url && s.url===t.url); if(ex) return ex.id; const id=140000+Math.floor(Math.random()*100000); STORIES.unshift({ id, title:t.title, land:t.land||'Bundesweit', ort:t.ort||'Bundesweit', topic:t.topic||'#Radverkehr', sources:t.sources||1, time:'von KIRA gefunden', sort:2001, img:'p'+((id%8)+1), neu:true, kira:true, reason:t.reason||'', url:t.url }); return id; }
+function importOne(i,dest){ const t=FOUND[i]; if(!t) return; if(dest==='stack' && !currentEditor){ document.getElementById('editor-overlay').classList.add('on'); return; } const id=addFound(t); if(dest==='stack' && !stack.includes(id)){ stack.push(id); stackOwner[id]=currentEditor; } document.getElementById('live-count').textContent=STORIES.length; FOUND.splice(i,1); renderGrid(); renderStack(); renderFindResults('web'); toast(dest==='stack'?'Auf deinen Stack':'Ins Grid gelegt'); }
+function importSelected(dest){
+  const idx=[...document.querySelectorAll('.find-cb:checked')].map(c=>parseInt(c.dataset.i,10)).sort((a,b)=>b-a);
+  if(!idx.length){ toast('Nichts ausgewählt'); return; }
+  if(dest==='stack' && !currentEditor){ document.getElementById('editor-overlay').classList.add('on'); return; }
+  let n=0; idx.forEach(i=>{ const t=FOUND[i]; if(!t) return; const id=addFound(t); if(dest==='stack' && !stack.includes(id)){ stack.push(id); stackOwner[id]=currentEditor; } FOUND.splice(i,1); n++; });
+  document.getElementById('live-count').textContent=STORIES.length; renderGrid(); renderStack(); renderFindResults('web');
+  if(dest==='stack'){ closeFind(); toggleDrawer(true); }
+  toast(dest==='stack'?`${n} in deinen Stack`:`${n} ins Grid gelegt`);
 }
 
 function myStack(){ return stack.filter(id => stackOwner[id] === currentEditor); }
@@ -971,7 +1000,8 @@ async function loadSichtung(){
   }catch(e){ /* als Datei geöffnet oder kein Server -> Beispieldaten behalten */ }
 }
 
-ensureTeam(); renderFilters(); renderGrid(); renderStack(); renderInboxCount(); initEditor(); loadSichtung(); loadDrafts(); loadPublished();
+function startClock(){ const el=document.getElementById('clock'); function upd(){ if(el) el.textContent=new Date().toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+' Uhr'; } upd(); setInterval(upd,30000); }
+ensureTeam(); startClock(); renderGrid(); renderStack(); renderInboxCount(); initEditor(); loadSichtung(); loadDrafts(); loadPublished();
 </script>
 </body>
 </html>

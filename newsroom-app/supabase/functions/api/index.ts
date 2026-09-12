@@ -143,7 +143,7 @@ Deno.serve(async (req: Request) => {
   try {
     /* ----- Sichtung ----- */
     if (action === 'sichtung') {
-      const { data } = await db.from('sichtung').select('*').order('received_at', { ascending: false }).limit(SICHTUNG_LIMIT);
+      const { data } = await db.from('sichtung').select('*').order('relevance', { ascending: false }).order('received_at', { ascending: false }).limit(SICHTUNG_LIMIT);
       const { count } = await db.from('sichtung').select('*', { count: 'exact', head: true });
       const items = (data || []).map((r: any, i: number) => ({ id: 1000 + i, title: r.title, url: r.url, land: r.land, ort: r.ort, topic: r.topic, sources: r.sources, relevance: r.relevance, reason: r.reason }));
       return json({ items, count: items.length, total: count || items.length });
