@@ -355,7 +355,7 @@
 <div class="eo" id="draft-overlay">
   <div class="box" style="max-width:660px;max-height:82vh;display:flex;flex-direction:column">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0">Entwürfe — geteilt</h3><button onclick="closeDrafts()" style="font-size:24px;color:var(--dim);line-height:1">×</button></div>
-    <p style="margin-bottom:12px">Gespeicherte Entwürfe aller Redakteure. Zum Weiterarbeiten öffnen.</p>
+    <p style="margin-bottom:12px">Gespeicherte Entwürfe des Teams. Zum Weiterarbeiten öffnen.</p>
     <div id="draft-list" style="overflow-y:auto"></div>
   </div>
 </div>
@@ -520,7 +520,7 @@ function setEditor(e){ currentEditor=e; try{ localStorage.setItem('nr-editor',e)
   document.getElementById('editormenu').classList.remove('on');
   paintEditor(); renderGrid(); renderStack(); toast('Angemeldet als '+e); }
 function toggleEditorMenu(ev){ ev.stopPropagation(); const m=document.getElementById('editormenu');
-  m.innerHTML=EDITORS.map(e=>`<div class="em ${e===currentEditor?'on':''}" onclick="setEditor('${e}')"><span class="ini">${e}</span>Redakteur ${e}</div>`).join('');
+  m.innerHTML=EDITORS.map(e=>`<div class="em ${e===currentEditor?'on':''}" onclick="setEditor('${e}')"><span class="ini">${e}</span>${e}</div>`).join('');
   m.classList.toggle('on'); }
 document.addEventListener('click',()=>{ const m=document.getElementById('editormenu'); if(m) m.classList.remove('on'); const r=document.getElementById('reassign-menu'); if(r) r.classList.remove('on'); });
 
@@ -722,7 +722,7 @@ function showMaske(){ document.getElementById('maske').classList.add('on'); docu
 function closeMaske(){ document.getElementById('maske').classList.remove('on'); document.body.style.overflow=''; M=null; }
 function discardCurrent(){ if(!M||!M.story){ closeMaske(); return; } const id=M.story.id, sid=M.story.sid; const i=stack.indexOf(id); if(i>-1){ stack.splice(i,1); delete stackOwner[id]; } reassignedNew.delete(id); const gi=STORIES.findIndex(x=>x.id===id); if(gi>-1) STORIES.splice(gi,1); if(sid) apiPost('story.update',{story_id:sid,patch:{status:'rejected',owner:null}}).catch(()=>{}); document.getElementById('live-count').textContent=STORIES.length; renderStack(); renderGrid(); toast('Verworfen'); nextStory(); }
 function reassignMenu(ev){ ev.stopPropagation(); const m=document.getElementById('reassign-menu'); const others=EDITORS.filter(e=>e!==currentEditor);
-  m.innerHTML=`<div style="padding:7px 12px 4px;font-size:11px;color:var(--dim);font-weight:700">An Redakteur:in übergeben</div>`+others.map(e=>`<div class="em" onclick="reassignTo('${e}')"><span class="ini">${e}</span>Redakteur ${e}</div>`).join('');
+  m.innerHTML=`<div style="padding:7px 12px 4px;font-size:11px;color:var(--dim);font-weight:700">Übergeben an</div>`+others.map(e=>`<div class="em" onclick="reassignTo('${e}')"><span class="ini">${e}</span>${e}</div>`).join('');
   m.style.position='fixed'; m.style.top=(ev.clientY+18)+'px'; m.style.left=Math.min(ev.clientX-40, window.innerWidth-230)+'px'; m.style.right='auto'; m.style.zIndex='90'; m.classList.add('on'); }
 function reassignTo(e){ if(!M||!M.story) return; const id=M.story.id; if(!stack.includes(id)) stack.push(id); stackOwner[id]=e; reassignedNew.add(id); if(M.story.sid) apiPost('story.update',{story_id:M.story.sid,patch:{status:'stack',owner:e,is_new:true}}).catch(()=>{}); renderStack(); renderGrid(); closeMaske(); toast('An '+e+' übergeben — erscheint dort mit „neu"'); }
 function loadCurrent(){ const id=M.list[M.idx]; M.story=STORIES.find(x=>x.id===id); if(reassignedNew.has(id)){ reassignedNew.delete(id); const s0=STORIES.find(x=>x.id===id); if(s0&&s0.sid) apiPost('story.update',{story_id:s0.sid,patch:{is_new:false}}).catch(()=>{}); renderStack(); } M.researching=false; M.researched=false; M.research=null; M.generating=false; M.drafted=false; M.article=null; M.angle=null; M.variant='A'; M.laenge='News'; M.kiraAnswer=null; M.kiraAsking=false; renderMaske(); }
