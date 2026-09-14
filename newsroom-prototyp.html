@@ -499,7 +499,7 @@ function approveInbox(id){
   document.getElementById('live-count').textContent=STORIES.length;
   renderInboxCount(); renderSichtung(); renderGrid(); toast('In den Newsroom übernommen');
 }
-function rejectInbox(id){ const i=INBOX.findIndex(x=>x.id===id); if(i<0) return; INBOX.splice(i,1); renderInboxCount(); renderSichtung(); toast('Verworfen'); }
+function rejectInbox(id){ const i=INBOX.findIndex(x=>x.id===id); if(i<0) return; const it=INBOX.splice(i,1)[0]; if(it.url) apiPost('story.create',{story:{ story_id:it.url, status:'rejected', title:it.title, url:it.url, land:it.land, ort:it.ort, topic:it.topic, sources:it.sources }}).catch(()=>{}); renderInboxCount(); renderSichtung(); toast('Verworfen — kommt nicht wieder'); }
 function approveAll(){ [...INBOX].filter(x=>x.relevance>=50).forEach(x=>approveInbox(x.id)); toast('Alle relevanten übernommen'); }
 const FILTERS = ["Für dich","✦ Vorschläge","Bundesweit","Bayern","Sachsen","Baden-Württ.","#Politik","#Handel","#Radweg","#Event"];
 let activeFilter = "Für dich";
