@@ -49,7 +49,7 @@
   @media(max-width:520px){.card.hero{grid-column:span 1;grid-row:span 1;min-height:200px;}}
   .img{position:absolute;inset:0;}
   .shade{position:absolute;inset:0;background:linear-gradient(to top,rgba(10,12,16,.86) 0%,rgba(10,12,16,.12) 48%,transparent 72%);}
-  .p1{background:linear-gradient(160deg,#8ec5e8,#3f6f9e);}.p2{background:linear-gradient(160deg,#c9cdd2,#8a9199);}.p3{background:linear-gradient(160deg,#e0a06a,#9c5a2e);}.p4{background:linear-gradient(160deg,#8fb98f,#4d7a52);}.p5{background:linear-gradient(160deg,#7f8bd6,#3f478f);}.p6{background:linear-gradient(160deg,#d68f9f,#8a4658);}.p7{background:linear-gradient(160deg,#9ac0d0,#4f8296);}.p8{background:linear-gradient(160deg,#cfc07a,#8a7a35);}
+  .p1{background:linear-gradient(160deg,#3f7d8c,#285561);}.p2{background:linear-gradient(160deg,#4a78a8,#2d4d70);}.p3{background:linear-gradient(160deg,#5f5fa0,#3a3a6b);}.p4{background:linear-gradient(160deg,#8a5586,#5a3557);}.p5{background:linear-gradient(160deg,#b05a76,#7a3a50);}.p6{background:linear-gradient(160deg,#bd6a4e,#8a4530);}.p7{background:linear-gradient(160deg,#c39a4e,#8a6a2f);}.p8{background:linear-gradient(160deg,#7f9455,#556234);}.p9{background:linear-gradient(160deg,#4e8b64,#2f5f41);}.p10{background:linear-gradient(160deg,#6b7280,#454b55);}
   .rtag{position:absolute;top:10px;left:10px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:5px;}
   .kira{position:absolute;top:9px;right:9px;background:rgba(255,255,255,.93);color:var(--ink);font-size:11px;font-weight:800;padding:6px 10px;border-radius:8px;opacity:0;transition:opacity .12s;}
   .card:hover .kira{opacity:1;}
@@ -635,7 +635,7 @@ function renderFindResults(mode){
       </div>`; }).join('')
     + `<div class="find-foot"><button class="find-bulk ghost" onclick="importSelected('grid')">Auswahl ins Grid</button><button class="find-bulk" onclick="importSelected('stack')">Auswahl in meinen Stack</button></div>`;
 }
-function addFound(t){ const ex=STORIES.find(s=>s.url && s.url===t.url); if(ex) return ex.id; const cid=CID++; const sid=t.url; STORIES.unshift({ id:cid, sid, title:t.title, land:t.land||'Bundesweit', ort:t.ort||'Bundesweit', topic:t.topic||'#Radverkehr', sources:t.sources||1, time:'von KIRA gefunden', sort:2001, img:'p'+((cid%8)+1), neu:true, kira:true, reason:t.reason||'', url:t.url }); apiPost('story.create',{story:{ story_id:sid, status:'grid', title:t.title, url:t.url, land:t.land||'Bundesweit', ort:t.ort||'Bundesweit', topic:t.topic||'#Radverkehr', sources:t.sources||1, kira:true, reason:t.reason||'' }}).catch(()=>{}); return cid; }
+function addFound(t){ const ex=STORIES.find(s=>s.url && s.url===t.url); if(ex) return ex.id; const cid=CID++; const sid=t.url; STORIES.unshift({ id:cid, sid, title:t.title, land:t.land||'Bundesweit', ort:t.ort||'Bundesweit', topic:t.topic||'#Radverkehr', sources:t.sources||1, time:'von KIRA gefunden', sort:2001, img:'p'+((cid%10)+1), neu:true, kira:true, reason:t.reason||'', url:t.url }); apiPost('story.create',{story:{ story_id:sid, status:'grid', title:t.title, url:t.url, land:t.land||'Bundesweit', ort:t.ort||'Bundesweit', topic:t.topic||'#Radverkehr', sources:t.sources||1, kira:true, reason:t.reason||'' }}).catch(()=>{}); return cid; }
 function importOne(i,dest){ const t=FOUND[i]; if(!t) return; if(dest==='stack' && !currentEditor){ document.getElementById('editor-overlay').classList.add('on'); return; } const id=addFound(t); if(dest==='stack' && !stack.includes(id)){ stack.push(id); stackOwner[id]=currentEditor; } document.getElementById('live-count').textContent=STORIES.length; FOUND.splice(i,1); renderGrid(); renderStack(); renderFindResults('web'); toast(dest==='stack'?'Auf deinen Stack':'Ins Grid gelegt'); }
 function importSelected(dest){
   const idx=[...document.querySelectorAll('.find-cb:checked')].map(c=>parseInt(c.dataset.i,10)).sort((a,b)=>b-a);
@@ -1000,7 +1000,7 @@ async function loadSichtung(){
     const d = await r.json();
     if(d && d.items && d.items.length){
       INBOX.length = 0;
-      const imgs = ['p1','p2','p3','p4','p5','p6','p7','p8'];
+      const imgs = ['p1','p2','p3','p4','p5','p6','p7','p8','p9','p10'];
       d.items.forEach((it,i)=>INBOX.push({
         id: 1000+i,
         title: it.title,
@@ -1008,7 +1008,7 @@ async function loadSichtung(){
         ort: it.ort || it.land || 'Bundesweit',
         topic: it.topic || '#Radverkehr',
         sources: it.sources || 1,
-        img: imgs[i%8],
+        img: imgs[i%10],
         relevance: it.relevance != null ? it.relevance : 50,
         reason: it.reason || '',
         url: it.url || ''
